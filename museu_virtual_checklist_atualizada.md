@@ -1,8 +1,17 @@
 # Museu Virtual Pessoal — Checklist (atualizada)
 
-Exportado em 18/11/2026, 16:10:33. Concluídas: 0/154.
+Exportado em 18/11/2026, 16:10:33. Concluídas: 5/154 (em curso: 7). Última atualização: 18/11/2026.
 PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 > Prioridade P0 = bloqueante; P1 = importante; P2 = extra.
+
+## Registo de progresso
+
+### 2026-11-18
+- **Feito:** T005, T006, T051, T053, T054.
+- **Em curso:** T004, T019, T022, T052, T055, T056, T057 (ver nota em cada tarefa).
+- **Adiantado (parcial, fora do sprint):** idempotência por `commandId` na API e deduplicação/expiração no simulador (T108).
+- **Bloqueado neste PC:** Unity e Blender não estão instalados (T010–T012, T024+); Docker Desktop desligado (T022, T055, T056 sem teste com broker/PostgreSQL).
+- **Atalhos a resolver:** utilizador de demonstração fixo sem autenticação (`backend/app/deps.py`, resolver em T076); comandos ficam em `requested` sem publicar no MQTT (T099/T107).
 
 ## S1 — Fundação e decisões críticas (16–22 nov.)
 
@@ -22,14 +31,17 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Criar app-android/, museum-unity/, blender/, backend/, ml/, iot/, docs/, tests/; configurar .gitignore, README e branches.
   - **Aceitação:** Repositório clonado pelos três elementos.
   - **Prazo:** 2026-11-22
-- [ ] **T005 · Geral · P0** — Fixar arquitetura mínima e IDs
+  - **Em curso (2026-11-18):** Pastas `app-android/`, `museum-unity/`, `blender/`, `backend/`, `ml/`, `iot/`, `docs/`, `tests/`, `.gitignore`, `README.md`; repositório público em GitHub. **Falta:** branches/convenções de commits e clone pelos três elementos.
+- [x] **T005 · Geral · P0** — Fixar arquitetura mínima e IDs
   - **Passos:** Desenhar diagrama: Android/Unity ↔ HTTPS API ↔ BD/imagens/IA; backend ↔ MQTT ↔ módulo IoT; definir IDs UUID para fotografia, exposição, quadro, moldura e comando.
   - **Aceitação:** Diagrama e ficheiro contracts/v1.md.
   - **Prazo:** 2026-11-22
-- [ ] **T006 · Geral · P0** — Definir contratos JSON e nomenclatura
+  - **Feito (2026-11-18):** Diagrama mermaid e IDs UUID em `contracts/v1.md` §1–2.
+- [x] **T006 · Geral · P0** — Definir contratos JSON e nomenclatura
   - **Passos:** Especificar campos, formatos de URL, timestamps ISO 8601 UTC, versão da ficha, estado de comando e erros; definir esquema dos tópicos MQTT.
   - **Aceitação:** Exemplos de requests/responses partilhados.
   - **Prazo:** 2026-11-22
+  - **Feito (2026-11-18):** JSON de request/response, ISO 8601 UTC com `Z`, `version` da ficha, estados de comando, formato de erro e tópicos MQTT em `contracts/v1.md` §2–4.
 - [ ] **T007 · Geral · P0** — Identificar riscos e plano B
   - **Passos:** Definir decisão de motor Unity/Godot e integração UnityLibrary/cliente separado; caso XR falhe, registar teste e alternativa documentável.
   - **Aceitação:** Matriz de risco com data-limite de decisão.
@@ -82,6 +94,7 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Proposta operacional: FastAPI + PostgreSQL + armazenamento local de ficheiros para MVP; confirmar equipa e limitações de alojamento.
   - **Aceitação:** ADR com opções e decisão.
   - **Prazo:** 2026-11-22
+  - **Em curso (2026-11-18):** ADR em `docs/adr/0001-backend-stack.md` (FastAPI + PostgreSQL + ficheiros locais). **Falta:** validação da equipa.
 - [ ] **T020 · TEI · P0** — Inventariar hardware IoT
   - **Passos:** Escolher ESP32/alternativa, sensor de temperatura, relé/módulo de iluminação seguro, ventoinha baixa tensão e alimentação apropriada.
   - **Aceitação:** Lista de equipamentos, interfaces e custos.
@@ -94,6 +107,7 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Instalar broker local; publicar leitura simulada e comando com correlationId e ack de aplicação, testando ligação/desligação.
   - **Aceitação:** Logs completos do ciclo de comando.
   - **Prazo:** 2026-11-22
+  - **Em curso (2026-11-18):** `iot/simulator.py` publica leituras e estado (com LWT offline), recebe comandos com `commandId` e responde `ack`; lógica testada em `iot/test_simulator.py`. **Falta:** correr com o Mosquitto e guardar os logs (Docker estava desligado).
 - [ ] **T023 · Integração · P0** — Executar integração vertical mínima
   - **Passos:** Kotlin abre visão Unity, Unity carrega um ID de fotografia fictício, mostra quadro e regressa à app; usar a mesma API ou contrato.
   - **Aceitação:** Vídeo/print de interação entre módulos.
@@ -209,34 +223,41 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Implementar transfer learning com pesos elegíveis e cabeça para classes escolhidas; congelar backbone no primeiro treino.
   - **Aceitação:** Primeiro modelo MobileNetV2 treinável.
   - **Prazo:** 2026-11-29
-- [ ] **T051 · TEI · P0** — Criar projeto API FastAPI e OpenAPI
+- [x] **T051 · TEI · P0** — Criar projeto API FastAPI e OpenAPI
   - **Passos:** Endpoints /health, /photos, /exhibitions, /devices, /commands e estrutura routers/services/schemas/repos.
   - **Aceitação:** GET /health e docs executáveis.
   - **Prazo:** 2026-11-29
+  - **Feito (2026-11-18):** `backend/app/` com routers `/health`, `/photos`, `/exhibitions`, `/devices`, `/commands`; OpenAPI em `/docs` verificado a correr. Sem camadas services/repos separadas (routers + schemas + models chegam por agora).
 - [ ] **T052 · TEI · P0** — Criar tabelas PostgreSQL e migrações
   - **Passos:** Tabelas users, photos, labels, exhibitions, exhibition_photos, frames, physical_frames, devices, readings, commands; PK/FK e timestamps.
   - **Aceitação:** Migração executada e reversível.
   - **Prazo:** 2026-11-29
-- [ ] **T053 · TEI · P0** — Implementar upload de ficheiro
+  - **Em curso (2026-11-18):** Todas as tabelas pedidas em `backend/app/models.py`; migração `backend/alembic/versions/55c9058a2430_initial_schema.py`; upgrade → downgrade → upgrade testado em SQLite. **Falta:** correr em PostgreSQL.
+- [x] **T053 · TEI · P0** — Implementar upload de ficheiro
   - **Passos:** Validar MIME e tamanho, gerar ID e path seguro, guardar original e miniatura; impedir traversal e sobrescrita.
   - **Aceitação:** Foto enviada e consultável por ID.
   - **Prazo:** 2026-11-29
-- [ ] **T054 · TEI · P0** — Criar CRUD inicial de fotografias e exposições
+  - **Feito (2026-11-18):** `backend/app/storage.py`: formato validado pelo conteúdo (JPEG/PNG/WEBP), máx. 10 MB, nome UUID gerado pelo servidor (nome do cliente ignorado), original + miniatura JPEG 400 px. Coberto por testes.
+- [x] **T054 · TEI · P0** — Criar CRUD inicial de fotografias e exposições
   - **Passos:** Criar, listar, alterar, apagar e associar foto a exposição; devolver erros HTTP coerentes.
   - **Aceitação:** Testes básicos de API passam.
   - **Prazo:** 2026-11-29
+  - **Feito (2026-11-18):** CRUD de fotografias e exposições + associar/mover/desassociar foto com `position`; 404/413/415/422 coerentes. 10 testes em `backend/tests/test_api.py` passam.
 - [ ] **T055 · TEI · P0** — Configurar Docker Compose de desenvolvimento
   - **Passos:** Backend, PostgreSQL e Mosquitto; volumes, healthchecks e ficheiro .env.example sem passwords reais.
   - **Aceitação:** Ambiente sobe com comando documentado.
   - **Prazo:** 2026-11-29
+  - **Em curso (2026-11-18):** `docker-compose.yml` com PostgreSQL 16, Mosquitto 2 e backend, volumes, healthchecks e `.env.example`. **Falta:** `docker compose up` real (Docker estava desligado).
 - [ ] **T056 · TEI · P0** — Implementar IoT simulado com MQTT
   - **Passos:** Publicar temperatura/estado periodicamente e receber setDesiredState com ack e status observado; usar IDs únicos de comando.
   - **Aceitação:** Dashboard de broker mostra eventos.
   - **Prazo:** 2026-11-29
+  - **Em curso (2026-11-18):** Simulador com temperatura periódica, estado observado, ack, deduplicação por `commandId` e expiração. **Falta:** ver os eventos no broker.
 - [ ] **T057 · Integração · P0** — Definir pasta de contratos partilhados
   - **Passos:** Criar OpenAPI, JSON de exemplo e convenções de assetID/photoID/exhibitionID; fixar versões antes da ligação real.
   - **Aceitação:** Android, Unity e API interpretam os mesmos IDs.
   - **Prazo:** 2026-11-29
+  - **Em curso (2026-11-18):** `contracts/v1.md` com exemplos JSON e convenções de IDs; OpenAPI gerado em `/docs`. **Falta:** Android e Unity confirmarem o contrato.
 
 ## S3 — Primeiro percurso ponta a ponta (30 nov.–6 dez.)
 

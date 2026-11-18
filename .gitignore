@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+*.db
+
+# Segredos e dados locais
+.env
+backend/storage/
+storage/
+
+# Android
+app-android/**/build/
+app-android/.gradle/
+app-android/local.properties
+*.apk
+*.aab
+
+# Unity
+museum-unity/[Ll]ibrary/
+museum-unity/[Tt]emp/
+museum-unity/[Oo]bj/
+museum-unity/[Bb]uild/
+museum-unity/[Bb]uilds/
+museum-unity/[Ll]ogs/
+museum-unity/[Uu]ser[Ss]ettings/
+
+# Blender
+*.blend1
+
+# IDE / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+~$*
