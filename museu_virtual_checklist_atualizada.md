@@ -1,0 +1,646 @@
+# Museu Virtual Pessoal — Checklist (atualizada)
+
+Exportado em 18/11/2026, 16:10:33. Concluídas: 0/154.
+PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
+> Prioridade P0 = bloqueante; P1 = importante; P2 = extra.
+
+## S1 — Fundação e decisões críticas (16–22 nov.)
+
+- [ ] **T001 · Geral · P0** — Confirmar enunciados e entregas das quatro UCs
+  - **Passos:** Obter formatos, rubricas, relatórios, demonstrações, software permitido e hora efetiva da submissão de 05/01; registar divergências entre UCs.
+  - **Aceitação:** Quadro de requisitos de entrega validado pela equipa.
+  - **Prazo:** 2026-11-22
+- [ ] **T002 · Geral · P0** — Fechar o MVP e os limites
+  - **Passos:** Definir caminho foto→IA→edição→exposição→museu e zona física mínima; marcar áudio, colaboração e pesquisa semântica como extras.
+  - **Aceitação:** Lista de obrigatórios e extras aprovada.
+  - **Prazo:** 2026-11-22
+- [ ] **T003 · Geral · P0** — Atribuir responsáveis e tarefas partilhadas
+  - **Passos:** Distribuir Android/IA, Blender/Unity e backend/IoT, com todos responsáveis por contratos, integração e avaliação.
+  - **Aceitação:** Nome de responsável por frente e rotina de revisão.
+  - **Prazo:** 2026-11-22
+- [ ] **T004 · Geral · P0** — Criar repositório e convenções
+  - **Passos:** Criar app-android/, museum-unity/, blender/, backend/, ml/, iot/, docs/, tests/; configurar .gitignore, README e branches.
+  - **Aceitação:** Repositório clonado pelos três elementos.
+  - **Prazo:** 2026-11-22
+- [ ] **T005 · Geral · P0** — Fixar arquitetura mínima e IDs
+  - **Passos:** Desenhar diagrama: Android/Unity ↔ HTTPS API ↔ BD/imagens/IA; backend ↔ MQTT ↔ módulo IoT; definir IDs UUID para fotografia, exposição, quadro, moldura e comando.
+  - **Aceitação:** Diagrama e ficheiro contracts/v1.md.
+  - **Prazo:** 2026-11-22
+- [ ] **T006 · Geral · P0** — Definir contratos JSON e nomenclatura
+  - **Passos:** Especificar campos, formatos de URL, timestamps ISO 8601 UTC, versão da ficha, estado de comando e erros; definir esquema dos tópicos MQTT.
+  - **Aceitação:** Exemplos de requests/responses partilhados.
+  - **Prazo:** 2026-11-22
+- [ ] **T007 · Geral · P0** — Identificar riscos e plano B
+  - **Passos:** Definir decisão de motor Unity/Godot e integração UnityLibrary/cliente separado; caso XR falhe, registar teste e alternativa documentável.
+  - **Aceitação:** Matriz de risco com data-limite de decisão.
+  - **Prazo:** 2026-11-22
+- [ ] **T008 · Geral · P1** — Escolher fotografias de teste não sensíveis
+  - **Passos:** Separar imagens públicas/licenciadas para testes e fotografias pessoais apenas por consentimento; preparar pelo menos 6 exemplos.
+  - **Aceitação:** Pasta de amostras legalmente utilizável.
+  - **Prazo:** 2026-11-22
+- [ ] **T009 · Geral · P1** — Definir critérios de conclusão e métricas
+  - **Passos:** Especificar evidência por tarefa, alvo provisório de macro-F1, teste galeria vs museu, latência de comando e tratamento de falhas.
+  - **Aceitação:** Plano inicial de avaliação.
+  - **Prazo:** 2026-11-22
+- [ ] **T010 · RVA · P0** — Instalar e fixar versões de Blender e Unity
+  - **Passos:** Instalar Blender, Unity Hub e editor LTS disponível; módulo Android Build Support; escolher URP ou configuração mobile equivalente e registar versões.
+  - **Aceitação:** Projetos .blend e Unity abrem e fazem build.
+  - **Prazo:** 2026-11-22
+- [ ] **T011 · RVA · P0** — Verificar telemóvel, GPU e visor RV
+  - **Passos:** Testar build 3D Android no equipamento real; inventariar suporte ARCore e visor OpenXR, evitando assumir compatibilidade.
+  - **Aceitação:** Checklist de hardware e captura da prova.
+  - **Prazo:** 2026-11-22
+- [ ] **T012 · RVA · P0** — Criar cena Unity mínima e compilar Android
+  - **Passos:** Cena com chão, cubo/quadro, câmara e controlo; executar em telemóvel; medir fps aproximado e erros.
+  - **Aceitação:** APK de teste a abrir no Android.
+  - **Prazo:** 2026-11-22
+- [ ] **T013 · DDM · P0** — Criar base Android em Kotlin/Jetpack Compose
+  - **Passos:** Criar projeto Empty Activity, Material 3, navegação mínima e packages data/domain/ui; fixar Gradle e SDK compatíveis.
+  - **Aceitação:** App inicia no telemóvel.
+  - **Prazo:** 2026-11-22
+- [ ] **T014 · DDM · P0** — Fazer spike Unity ↔ Android Studio
+  - **Passos:** Exportar Unity como projeto Gradle, identificar unityLibrary e launcher; incluir biblioteca num host Android, abrir fullscreen e regressar à Compose UI.
+  - **Aceitação:** PoC abre/fecha Unity sem crash.
+  - **Prazo:** 2026-11-22
+- [ ] **T015 · DDM · P0** — Testar Photo Picker Android
+  - **Passos:** Usar ActivityResultContracts.PickVisualMedia, obter Uri, ler imagem sem pedir acesso total à galeria; identificar limites da URI e cópia temporária.
+  - **Aceitação:** Imagem escolhida e mostrada no Compose.
+  - **Prazo:** 2026-11-22
+- [ ] **T016 · DDM · P1** — Desenhar mapa de navegação
+  - **Passos:** Ecrãs Início, Coleção, Nova Fotografia, Editar Ficha, Exposições, Museu, Definições e Controlo; estados loading/erro/vazio.
+  - **Aceitação:** Fluxo navegável com dados fictícios.
+  - **Prazo:** 2026-11-22
+- [ ] **T017 · AAP · P0** — Definir problema de classificação
+  - **Passos:** Escolher 4–8 categorias visuais provisórias como praia, floresta e edifício; separar rótulos visuais de exposições pessoais como Família.
+  - **Aceitação:** Lista de classes e critérios de rotulagem.
+  - **Prazo:** 2026-11-22
+- [ ] **T018 · AAP · P0** — Selecionar dataset e licenças
+  - **Passos:** Inventariar origens, licenças, contagem e equilíbrio por classe; evitar fugas entre treino, validação e teste.
+  - **Aceitação:** Ficha de dataset e exemplos revistos.
+  - **Prazo:** 2026-11-22
+- [ ] **T019 · TEI · P0** — Selecionar stack backend e persistência
+  - **Passos:** Proposta operacional: FastAPI + PostgreSQL + armazenamento local de ficheiros para MVP; confirmar equipa e limitações de alojamento.
+  - **Aceitação:** ADR com opções e decisão.
+  - **Prazo:** 2026-11-22
+- [ ] **T020 · TEI · P0** — Inventariar hardware IoT
+  - **Passos:** Escolher ESP32/alternativa, sensor de temperatura, relé/módulo de iluminação seguro, ventoinha baixa tensão e alimentação apropriada.
+  - **Aceitação:** Lista de equipamentos, interfaces e custos.
+  - **Prazo:** 2026-11-22
+- [ ] **T021 · TEI · P0** — Confirmar segurança do protótipo físico
+  - **Passos:** Não atuar diretamente sobre instalação elétrica/rede nem AC sem interface adequada; preferir LED/ventoinha em baixa tensão.
+  - **Aceitação:** Esquema seguro validado antes de montar.
+  - **Prazo:** 2026-11-22
+- [ ] **T022 · TEI · P0** — Fazer prova MQTT e estados
+  - **Passos:** Instalar broker local; publicar leitura simulada e comando com correlationId e ack de aplicação, testando ligação/desligação.
+  - **Aceitação:** Logs completos do ciclo de comando.
+  - **Prazo:** 2026-11-22
+- [ ] **T023 · Integração · P0** — Executar integração vertical mínima
+  - **Passos:** Kotlin abre visão Unity, Unity carrega um ID de fotografia fictício, mostra quadro e regressa à app; usar a mesma API ou contrato.
+  - **Aceitação:** Vídeo/print de interação entre módulos.
+  - **Prazo:** 2026-11-22
+
+## S2 — Blender, estrutura e serviços (23–29 nov.)
+
+- [ ] **T024 · RVA · P0** — Blender: criar ficheiro-base e convenções
+  - **Passos:** Criar museum_master.blend, coleções Architecture/Frames/Props/DigitalTwin, unidades métricas, origem e naming consistente; guardar fontes no Git LFS se necessário.
+  - **Aceitação:** Cena organizada e versionada.
+  - **Prazo:** 2026-11-29
+- [ ] **T025 · RVA · P0** — Blender: desenhar planta simples do museu
+  - **Passos:** Esboçar entrada, corredor modular, salas/exposições e zona do gémeo; estabelecer largura para circulação e escalas realistas.
+  - **Aceitação:** Planta 2D / esquema de circulação.
+  - **Prazo:** 2026-11-29
+- [ ] **T026 · RVA · P0** — Blender: construir blockout 3D
+  - **Passos:** Com cubos e planos, criar piso, paredes, teto, aberturas e porta; validar escala do visitante e altura dos quadros.
+  - **Aceitação:** Percurso completo em geometria simples.
+  - **Prazo:** 2026-11-29
+- [ ] **T027 · RVA · P0** — Blender: modelar segmento modular de corredor
+  - **Passos:** Criar módulo reutilizável de parede/piso/teto com dimensões fixas; testar repetição sem folgas para expansão.
+  - **Aceitação:** Módulo duplicável com encaixe correto.
+  - **Prazo:** 2026-11-29
+- [ ] **T028 · RVA · P0** — Blender: criar moldura parametrizável
+  - **Passos:** Modelar uma moldura com área interna plana para fotografia, orientação e proporções; manter mesh da imagem separada.
+  - **Aceitação:** Moldura e superfície independentes.
+  - **Prazo:** 2026-11-29
+- [ ] **T029 · RVA · P0** — Blender: criar variantes de quadros
+  - **Passos:** Preparar quadros horizontal, vertical e quadrado ou suporte com letterbox sem distorcer fotos.
+  - **Aceitação:** Três proporções verificadas.
+  - **Prazo:** 2026-11-29
+- [ ] **T030 · RVA · P1** — Blender: criar elementos secundários
+  - **Passos:** Modelar plintos, bancos, sinalética, rodapés e portas só se acrescentarem legibilidade, evitando detalhe excessivo.
+  - **Aceitação:** Ambiente reconhecível e leve.
+  - **Prazo:** 2026-11-29
+- [ ] **T031 · RVA · P0** — Blender: modelar zona física do gémeo
+  - **Passos:** Criar área com 2–3 molduras, candeeiro/LED, grelha de ventilação ou ventoinha e terminal de controlo.
+  - **Aceitação:** Objetos separados e identificáveis.
+  - **Prazo:** 2026-11-29
+- [ ] **T032 · RVA · P0** — Blender: UV unwrap e materiais básicos
+  - **Passos:** Criar UVs consistentes, materiais simples PBR com Base Color/Roughness, texturas de baixa resolução e sem nós proprietários essenciais.
+  - **Aceitação:** Materiais reproduzíveis no Unity.
+  - **Prazo:** 2026-11-29
+- [ ] **T033 · RVA · P0** — Blender: corrigir transforms e pivôs
+  - **Passos:** Aplicar scale/rotation aos objetos exportados; colocar pivot útil para interações; rever normais, faces duplicadas e dimensões.
+  - **Aceitação:** Sem modelos invertidos ou desescalados.
+  - **Prazo:** 2026-11-29
+- [ ] **T034 · RVA · P0** — Blender: exportar FBX para Unity
+  - **Passos:** Exportar segmentos/molduras/objetos para FBX; testar orientação dos eixos, escala, hierarquia e texturas; manter .blend como fonte.
+  - **Aceitação:** 3 modelos importados no Unity sem perda crítica.
+  - **Prazo:** 2026-11-29
+- [ ] **T035 · RVA · P1** — Blender: criar LOD/versões leves
+  - **Passos:** Reduzir polígonos e materiais repetidos; avaliar atlas de texturas e instâncias; não exportar geometria invisível.
+  - **Aceitação:** Cena inicial fluida num Android real.
+  - **Prazo:** 2026-11-29
+- [ ] **T036 · RVA · P0** — Unity: importar FBX e reconstruir prefabs
+  - **Passos:** Criar prefabs MuseumSection, Frame, Prop, DigitalTwinZone; atribuir materiais e colliders apenas onde necessário.
+  - **Aceitação:** Cena composta por prefabs reutilizáveis.
+  - **Prazo:** 2026-11-29
+- [ ] **T037 · RVA · P0** — Unity: preparar iluminação e câmara
+  - **Passos:** Configurar iluminação baked/estática quando possível, câmara e pós-processamento leve; validar imagem num telemóvel.
+  - **Aceitação:** Museu legível e sem custo excessivo.
+  - **Prazo:** 2026-11-29
+- [ ] **T038 · RVA · P0** — Unity: implementar navegação 3D mobile
+  - **Passos:** Implementar movimento e rotação por joystick/touch, limites, colisões e botão de sair/voltar à coleção.
+  - **Aceitação:** Percorrer corredor e abrir quadro num telemóvel.
+  - **Prazo:** 2026-11-29
+- [ ] **T039 · RVA · P0** — Unity: criar hotspot e painel de fotografia
+  - **Passos:** Raycast/tap para selecionar moldura, apresentar título/descrição/categoria e fechar detalhe.
+  - **Aceitação:** Quadro demonstrativo clicável.
+  - **Prazo:** 2026-11-29
+- [ ] **T040 · RVA · P1** — Unity: estruturar cenas e pacotes
+  - **Passos:** Separar bootstrap, museu, zona XR e assets; organizar pastas Scenes/Prefabs/Materials/Scripts/StreamingAssets.
+  - **Aceitação:** Projeto Unity fácil de integrar.
+  - **Prazo:** 2026-11-29
+- [ ] **T041 · DDM · P0** — Implementar navegação Jetpack Compose
+  - **Passos:** Adicionar Navigation Compose, rotas e ViewModels para ecrãs principais; centralizar estado da sessão.
+  - **Aceitação:** Navegação sem falhas de regresso.
+  - **Prazo:** 2026-11-29
+- [ ] **T042 · DDM · P0** — Criar UI Material 3 e estados
+  - **Passos:** Construir ecrãs iniciais com componentes comuns, loaders, erros e ecrãs vazios.
+  - **Aceitação:** Fluxo completo com mocks.
+  - **Prazo:** 2026-11-29
+- [ ] **T043 · DDM · P0** — Implementar seleção múltipla de fotografias
+  - **Passos:** Photo Picker múltiplo com validação MIME/tamanho e pré-visualização; gerir URIs e limites de permissões.
+  - **Aceitação:** Seleção de várias imagens com prévia.
+  - **Prazo:** 2026-11-29
+- [ ] **T044 · DDM · P0** — Criar formulário de ficha
+  - **Passos:** Título, descrição/memória, categorias sugeridas/editáveis, exposição e validação; distinguir rótulo IA de escolha humana.
+  - **Aceitação:** Ficha editável e validada.
+  - **Prazo:** 2026-11-29
+- [ ] **T045 · DDM · P0** — Criar Repository e modelos DTO
+  - **Passos:** Definir PhotoDto/ExhibitionDto/PredictionDto/DeviceDto, Result/UiState, mapeamentos e separação data/domain/ui.
+  - **Aceitação:** Mocks substituíveis por API sem refazer UI.
+  - **Prazo:** 2026-11-29
+- [ ] **T046 · DDM · P0** — Configurar cliente HTTPS
+  - **Passos:** Integrar Retrofit/OkHttp ou Ktor Client, timeouts, log em debug, serialização JSON e URL de desenvolvimento configurável.
+  - **Aceitação:** Chamada GET de teste ao backend.
+  - **Prazo:** 2026-11-29
+- [ ] **T047 · DDM · P1** — Configurar cache local simples
+  - **Passos:** Room opcional para fichas/miniaturas, ou cache com Coil; evitar sincronização offline complexa no MVP.
+  - **Aceitação:** Coleção carrega sem repetir downloads desnecessários.
+  - **Prazo:** 2026-11-29
+- [ ] **T048 · AAP · P0** — Implementar pipeline de preparação de dados
+  - **Passos:** Normalizar RGB e tamanhos, descartar duplicados, dividir por grupos relacionados em treino/validação/teste; documentar semente.
+  - **Aceitação:** Script reproduzível sem leakage.
+  - **Prazo:** 2026-11-29
+- [ ] **T049 · AAP · P0** — Criar CNN de referência
+  - **Passos:** Construir CNN pequena de raiz com TensorFlow/Keras, treinar baseline e guardar métricas/curvas.
+  - **Aceitação:** Modelo e histórico do treino guardados.
+  - **Prazo:** 2026-11-29
+- [ ] **T050 · AAP · P0** — Preparar MobileNetV2 pré-treinada
+  - **Passos:** Implementar transfer learning com pesos elegíveis e cabeça para classes escolhidas; congelar backbone no primeiro treino.
+  - **Aceitação:** Primeiro modelo MobileNetV2 treinável.
+  - **Prazo:** 2026-11-29
+- [ ] **T051 · TEI · P0** — Criar projeto API FastAPI e OpenAPI
+  - **Passos:** Endpoints /health, /photos, /exhibitions, /devices, /commands e estrutura routers/services/schemas/repos.
+  - **Aceitação:** GET /health e docs executáveis.
+  - **Prazo:** 2026-11-29
+- [ ] **T052 · TEI · P0** — Criar tabelas PostgreSQL e migrações
+  - **Passos:** Tabelas users, photos, labels, exhibitions, exhibition_photos, frames, physical_frames, devices, readings, commands; PK/FK e timestamps.
+  - **Aceitação:** Migração executada e reversível.
+  - **Prazo:** 2026-11-29
+- [ ] **T053 · TEI · P0** — Implementar upload de ficheiro
+  - **Passos:** Validar MIME e tamanho, gerar ID e path seguro, guardar original e miniatura; impedir traversal e sobrescrita.
+  - **Aceitação:** Foto enviada e consultável por ID.
+  - **Prazo:** 2026-11-29
+- [ ] **T054 · TEI · P0** — Criar CRUD inicial de fotografias e exposições
+  - **Passos:** Criar, listar, alterar, apagar e associar foto a exposição; devolver erros HTTP coerentes.
+  - **Aceitação:** Testes básicos de API passam.
+  - **Prazo:** 2026-11-29
+- [ ] **T055 · TEI · P0** — Configurar Docker Compose de desenvolvimento
+  - **Passos:** Backend, PostgreSQL e Mosquitto; volumes, healthchecks e ficheiro .env.example sem passwords reais.
+  - **Aceitação:** Ambiente sobe com comando documentado.
+  - **Prazo:** 2026-11-29
+- [ ] **T056 · TEI · P0** — Implementar IoT simulado com MQTT
+  - **Passos:** Publicar temperatura/estado periodicamente e receber setDesiredState com ack e status observado; usar IDs únicos de comando.
+  - **Aceitação:** Dashboard de broker mostra eventos.
+  - **Prazo:** 2026-11-29
+- [ ] **T057 · Integração · P0** — Definir pasta de contratos partilhados
+  - **Passos:** Criar OpenAPI, JSON de exemplo e convenções de assetID/photoID/exhibitionID; fixar versões antes da ligação real.
+  - **Aceitação:** Android, Unity e API interpretam os mesmos IDs.
+  - **Prazo:** 2026-11-29
+
+## S3 — Primeiro percurso ponta a ponta (30 nov.–6 dez.)
+
+- [ ] **T058 · RVA · P0** — Unity: implementar PhotoFrame prefab dinâmico
+  - **Passos:** Associar frameId/photoId/exhibitionId; texture no material da superfície interna, preservar proporção sem deformar imagem.
+  - **Aceitação:** Uma fotografia do backend aparece na moldura certa.
+  - **Prazo:** 2026-12-06
+- [ ] **T059 · RVA · P0** — Unity: obter dados de exposição pela API
+  - **Passos:** Cliente HTTP em C# para GET /exhibitions/{id} e respectivas fotos; gerir token/autorização conforme contrato.
+  - **Aceitação:** Instancia pelo menos uma exposição real.
+  - **Prazo:** 2026-12-06
+- [ ] **T060 · RVA · P0** — Unity: descarregar miniaturas e texturas
+  - **Passos:** Download assíncrono, cache de miniaturas, tratamento de URL inválida e descarte de Texture2D quando já não visível.
+  - **Aceitação:** Carregamento sem congelar a cena.
+  - **Prazo:** 2026-12-06
+- [ ] **T061 · RVA · P0** — Unity: mapear posições e ordem das molduras
+  - **Passos:** Gerar layout com posições fixas ou slots e IDs persistentes, evitando que fotos mudem aleatoriamente de quadro.
+  - **Aceitação:** Mesma coleção gera disposição previsível.
+  - **Prazo:** 2026-12-06
+- [ ] **T062 · RVA · P0** — Unity: interação com quadro e ficha
+  - **Passos:** Tap/raycast abre cartão com título, descrição/memória, categorias confirmadas e botão de regressar.
+  - **Aceitação:** Consulta completa da ficha num quadro real.
+  - **Prazo:** 2026-12-06
+- [ ] **T063 · RVA · P1** — Unity: tela de seleção de exposição
+  - **Passos:** Criar acesso direto à exposição sem percorrer todas as salas; suportar regressar à coleção Android.
+  - **Aceitação:** Alternar exposições facilmente.
+  - **Prazo:** 2026-12-06
+- [ ] **T064 · RVA · P0** — Unity: confirmar ciclo de vida com Android
+  - **Passos:** Abrir, suspender, retomar e fechar Unity repetidamente; gerir estados/áudio/orientação/tecla Back.
+  - **Aceitação:** 10 ciclos sem crash nem estado perdido.
+  - **Prazo:** 2026-12-06
+- [ ] **T065 · DDM · P0** — Implementar upload multipart real
+  - **Passos:** Usar ContentResolver para obter stream do Uri e enviar imagem por multipart com feedback de progresso; lidar com cancelamento.
+  - **Aceitação:** Imagem nova aparece no backend.
+  - **Prazo:** 2026-12-06
+- [ ] **T066 · DDM · P0** — Integrar endpoint de análise da IA
+  - **Passos:** POST /photos/{id}/analyze; aceitar taskId e consultar estado até receber categorias/scores/versão do modelo.
+  - **Aceitação:** UI exibe resposta real de IA.
+  - **Prazo:** 2026-12-06
+- [ ] **T067 · DDM · P0** — Implementar revisão de etiquetas
+  - **Passos:** Permitir aceitar/rejeitar/editar sugestões e não mostrar confiança como certeza; bloquear gravação de fichas incompletas.
+  - **Aceitação:** Categorias humanas ficam distintas das candidatas.
+  - **Prazo:** 2026-12-06
+- [ ] **T068 · DDM · P0** — Guardar e editar ficha no backend
+  - **Passos:** PUT/PATCH foto com título, memória, tags confirmadas, exposição; mostrar sucesso/erro e garantir consistência.
+  - **Aceitação:** Atualizar ficha sobrevive a reinício da app.
+  - **Prazo:** 2026-12-06
+- [ ] **T069 · DDM · P0** — Criar grelha de coleção com Coil
+  - **Passos:** Mostrar miniaturas, filtros simples por categoria/exposição, abrir detalhe e eliminar quando autorizado.
+  - **Aceitação:** Fotos do backend visíveis e editáveis.
+  - **Prazo:** 2026-12-06
+- [ ] **T070 · DDM · P0** — Criar botão Entrar no Museu com contexto
+  - **Passos:** Passar exhibitionId/user/session de forma definida ao Unity; não transmitir fotografia em memória se a API resolver por IDs.
+  - **Aceitação:** Cena abre na exposição certa.
+  - **Prazo:** 2026-12-06
+- [ ] **T071 · AAP · P0** — Guardar artefactos do modelo e metadados
+  - **Passos:** Exportar modelo escolhido provisoriamente, classes, preprocessamento e modelVersion; evitar treinar com fotos de utilizadores por omissão.
+  - **Aceitação:** Um artefacto reprodutível e versionado.
+  - **Prazo:** 2026-12-06
+- [ ] **T072 · AAP · P0** — Expor função de inferência real
+  - **Passos:** Criar serviço Python que recebe imagem, aplica preprocessamento idêntico ao treino e devolve classes, pontuações e versão.
+  - **Aceitação:** Resposta JSON válida para imagem de teste.
+  - **Prazo:** 2026-12-06
+- [ ] **T073 · AAP · P0** — Ligar endpoint do backend ao modelo
+  - **Passos:** Backend encaminha tarefa ao serviço ML ou módulo local, gere timeout e falhas, associa previsões ao photoId.
+  - **Aceitação:** Uma imagem carregada recebe etiquetas.
+  - **Prazo:** 2026-12-06
+- [ ] **T074 · TEI · P0** — Implementar endpoint de análise com estado
+  - **Passos:** Criar /analyze e /analysis/{taskId}; estado pending/running/done/failed; proteger execução contra pedidos duplicados.
+  - **Aceitação:** Ciclo de vida de inferência observável.
+  - **Prazo:** 2026-12-06
+- [ ] **T075 · TEI · P0** — Implementar URLs e permissões de imagem
+  - **Passos:** API serve miniaturas/originais apenas para utilizador autorizado; não expor caminhos de sistema.
+  - **Aceitação:** Unity/Android recebem imagens em permissões corretas.
+  - **Prazo:** 2026-12-06
+- [ ] **T076 · TEI · P0** — Definir autenticação mínima coerente
+  - **Passos:** Criar conta/identidade de demonstração, token ou sessão e autorização para fotografias; separar permissões IoT de leitura.
+  - **Aceitação:** Pedidos indevidos recebem 401/403.
+  - **Prazo:** 2026-12-06
+- [ ] **T077 · Integração · P0** — DEMO 1: fotografia do telemóvel no museu
+  - **Passos:** Usar uma fotografia real ou teste: importar → IA → rever → memória → associar exposição → mostrar em moldura Unity.
+  - **Aceitação:** Vídeo e checklist de todos os passos até 06/12.
+  - **Prazo:** 2026-12-06
+- [ ] **T078 · Integração · P0** — Testar falhas do percurso principal
+  - **Passos:** Sem rede, classificação lenta, imagem corrompida, saída do Unity e regresso; não perder alterações da ficha.
+  - **Aceitação:** Erros reproduzidos com mensagens adequadas.
+  - **Prazo:** 2026-12-06
+
+## S4 — Exposições, IA e desempenho (7–13 dez.)
+
+- [ ] **T079 · RVA · P0** — Blender: finalizar arquitetura e cenografia essencial
+  - **Passos:** Refinar paredes, portas, piso e escala sem sacrificar desempenho; manter origem .blend separada dos exports.
+  - **Aceitação:** Museu visualmente coerente em telemóvel.
+  - **Prazo:** 2026-12-13
+- [ ] **T080 · RVA · P0** — Blender: preparar UV e texturas otimizadas
+  - **Passos:** Reunir materiais, reduzir draw calls e texturas, evitar superfícies excessivamente detalhadas; documentar resolução.
+  - **Aceitação:** Sem texturas perdidas após novo export.
+  - **Prazo:** 2026-12-13
+- [ ] **T081 · RVA · P0** — Blender: preparar molduras com proporções reais
+  - **Passos:** Rever molduras retrato/paisagem e placas de legenda; evitar esticar fotografias do utilizador.
+  - **Aceitação:** Fotos extremas não ficam deformadas.
+  - **Prazo:** 2026-12-13
+- [ ] **T082 · RVA · P0** — Unity: implementar expansão modular de salas
+  - **Passos:** Instanciar segmentos reutilizáveis ligados por entradas; gerar/associar secções a exposições por ID.
+  - **Aceitação:** Nova exposição adiciona espaço sem remodelar cena.
+  - **Prazo:** 2026-12-13
+- [ ] **T083 · RVA · P0** — Unity: lazy loading e cache
+  - **Passos:** Carregar miniaturas próximas/visíveis; libertar texturas distantes e limitar simultaneidade dos pedidos.
+  - **Aceitação:** Estabilidade de memória com 30+ fotos de teste.
+  - **Prazo:** 2026-12-13
+- [ ] **T084 · RVA · P0** — Unity: mostrar estado vazio e atualização
+  - **Passos:** Exposições vazias, foto apagada, refresh depois de editar na app; revalidar versão dos dados.
+  - **Aceitação:** Quadros refletem alterações do backend.
+  - **Prazo:** 2026-12-13
+- [ ] **T085 · RVA · P1** — Unity: adicionar navegação rápida
+  - **Passos:** Minimapa simples, lista/teleporte de exposições, botão home e indicação de localização do visitante.
+  - **Aceitação:** Localizar exposição sem percorrer todo corredor.
+  - **Prazo:** 2026-12-13
+- [ ] **T086 · RVA · P1** — Unity: melhorar luz e qualidade visual
+  - **Passos:** Ajustar intensidade, sombras/baked lights, cor das paredes e legibilidade das fotografias; testar FPS real.
+  - **Aceitação:** Estética final sem travagens significativas.
+  - **Prazo:** 2026-12-13
+- [ ] **T087 · DDM · P0** — CRUD de exposições em Compose
+  - **Passos:** Criar, renomear, listar e apagar exposições; associar/desassociar fotos sem duplicar ficheiros.
+  - **Aceitação:** Exposições refletidas no Unity.
+  - **Prazo:** 2026-12-13
+- [ ] **T088 · DDM · P0** — Reorganizar ordem da coleção
+  - **Passos:** Permitir escolher ordem de apresentação de fotos ou posição lógica de slot, gravada no backend.
+  - **Aceitação:** Ordem estável após reinício.
+  - **Prazo:** 2026-12-13
+- [ ] **T089 · DDM · P1** — Pesquisa e filtros básicos
+  - **Passos:** Pesquisar por título e filtrar por categoria confirmada ou exposição; não incluir pesquisa semântica como requisito inicial.
+  - **Aceitação:** Encontrar foto por título e categoria.
+  - **Prazo:** 2026-12-13
+- [ ] **T090 · DDM · P1** — Melhorar UX e acessibilidade da ficha
+  - **Passos:** Textos legíveis, estados sem rede, validações e navegação acessível; confirmar tamanho de miniaturas.
+  - **Aceitação:** Percurso realizável sem instruções externas.
+  - **Prazo:** 2026-12-13
+- [ ] **T091 · AAP · P0** — Executar comparação CNN vs MobileNetV2
+  - **Passos:** Usar mesma separação treino/validação/teste e mesmas classes; comparar tamanho, desempenho e latência.
+  - **Aceitação:** Tabela de resultados comparáveis.
+  - **Prazo:** 2026-12-13
+- [ ] **T092 · AAP · P1** — Experimentar fine-tuning e data augmentation
+  - **Passos:** Ajustar últimas camadas, testar augmentations apenas em treino, Adam/SGD, dropout/L2 e registar configurações.
+  - **Aceitação:** Experimentos rastreáveis sem confundir variáveis.
+  - **Prazo:** 2026-12-13
+- [ ] **T093 · AAP · P0** — Avaliar precisão, recall e macro-F1
+  - **Passos:** Calcular matriz de confusão, precisão e revocação por classe, F1 macro, baseline de maioria e latência.
+  - **Aceitação:** Relatório de métricas e erros.
+  - **Prazo:** 2026-12-13
+- [ ] **T094 · AAP · P0** — Definir limiar de sugestões
+  - **Passos:** Escolher limiar exclusivamente na validação; indicar quando não há sugestão fiável; guardar scores para análise.
+  - **Aceitação:** Política de abstenção definida.
+  - **Prazo:** 2026-12-13
+- [ ] **T095 · TEI · P0** — Ligar sensor de temperatura ao ESP32
+  - **Passos:** Ler sensor adequado ao equipamento, definir unidade °C, intervalo, timestamp, sinalizar erro/desconexão.
+  - **Aceitação:** Telemetria real recebida no broker.
+  - **Prazo:** 2026-12-13
+- [ ] **T096 · TEI · P0** — Montar LED/luz segura em baixa tensão
+  - **Passos:** Controlar LED/fita ou módulo seguro através de GPIO adequado, evitando intervenção em 230 V.
+  - **Aceitação:** Comando local liga/desliga luz.
+  - **Prazo:** 2026-12-13
+- [ ] **T097 · TEI · P0** — Montar ventoinha de demonstração
+  - **Passos:** Comando por transistor/MOSFET adequado e alimentação dimensionada; distinguir ventilação de AC real.
+  - **Aceitação:** Ventoinha responde sem risco elétrico.
+  - **Prazo:** 2026-12-13
+- [ ] **T098 · TEI · P0** — Publicar estado observado e disponibilidade
+  - **Passos:** MQTT telemetria periódica, lastSeen, online/offline, lightObserved e fanObserved; validar diferenciação entre pedido e observação.
+  - **Aceitação:** Valores reais exibidos no backend.
+  - **Prazo:** 2026-12-13
+- [ ] **T099 · TEI · P0** — Implementar pipeline MQTT do servidor
+  - **Passos:** Subscrever leituras e acks; guardar readings e estado atual no PostgreSQL; expor GET /devices/status.
+  - **Aceitação:** API devolve leitura com timestamp.
+  - **Prazo:** 2026-12-13
+- [ ] **T100 · Integração · P0** — DEMO intermédia: 3 exposições e 10 fotografias
+  - **Passos:** Testar criar, editar, apagar e reorganizar fotos no Android e ver resultados no museu; recolher problemas.
+  - **Aceitação:** Sessão demonstrável antes de 13/12.
+  - **Prazo:** 2026-12-13
+
+## S5 — Gémeo digital e experiências XR (14–20 dez.)
+
+- [ ] **T101 · RVA · P0** — Blender: alinhar zona gémeo com exposição física
+  - **Passos:** Modelar posições 1:1 lógicas das 2–3 molduras e dispositivos, IDs e etiquetas, sem prometer correspondência de escala física exata.
+  - **Aceitação:** Mapa físico↔virtual documentado.
+  - **Prazo:** 2026-12-20
+- [ ] **T102 · RVA · P0** — Unity: criar painel de controlo da zona física
+  - **Passos:** UI in-world ou overlay para temperatura medida, timestamp, disponibilidade, luz, ventilação e estados de comando.
+  - **Aceitação:** Painel mostra dados da API.
+  - **Prazo:** 2026-12-20
+- [ ] **T103 · RVA · P0** — Unity: enviar comando via API
+  - **Passos:** Botões comandam estado pretendido (set ON/OFF), enviam idempotencyKey/correlationId e aguardam resultado; não usar toggle cego.
+  - **Aceitação:** Comandos passam pelo backend e não diretamente pelo MQTT.
+  - **Prazo:** 2026-12-20
+- [ ] **T104 · RVA · P0** — Unity: refletir só estados confirmados
+  - **Passos:** Mostrar A enviar/Confirmado/Falha/Offline, iluminação virtual apenas após ack observado; temperatura nunca é inventada.
+  - **Aceitação:** Falha de comando não altera falsamente o museu.
+  - **Prazo:** 2026-12-20
+- [ ] **T105 · RVA · P0** — Unity: associar molduras reais e virtuais
+  - **Passos:** Criar interface para frameId↔physicalFrameId e atualização de foto impressa declarada manualmente.
+  - **Aceitação:** Troca manual atualiza a moldura virtual correspondente.
+  - **Prazo:** 2026-12-20
+- [ ] **T106 · TEI · P0** — Definir topologia MQTT definitiva
+  - **Passos:** Tópicos commands/{deviceId}, status/{deviceId}, readings/{deviceId}, ack/{deviceId}; payload com commandId e timestamps.
+  - **Aceitação:** Contrato versionado e validado.
+  - **Prazo:** 2026-12-20
+- [ ] **T107 · TEI · P0** — Implementar máquina de estados de comando
+  - **Passos:** requested→sent→confirmed/failed/timeout; confirmação de transporte ≠ confirmação física; persistir histórico e tentativas.
+  - **Aceitação:** Sequência coerente nos logs.
+  - **Prazo:** 2026-12-20
+- [ ] **T108 · TEI · P0** — Implementar deduplicação e idempotência
+  - **Passos:** Cada pedido inclui commandId, estado desejado e expiração; dispositivo ignora repetidos antigos e evita alternância ambígua.
+  - **Aceitação:** Enviar repetido mantém mesmo estado.
+  - **Prazo:** 2026-12-20
+- [ ] **T109 · TEI · P0** — Implementar resiliência MQTT
+  - **Passos:** Reconnect, disponibilidade, heartbeat, timeout, leitura obsoleta e sincronização após restabelecer rede.
+  - **Aceitação:** Offline aparece e volta a estado atual.
+  - **Prazo:** 2026-12-20
+- [ ] **T110 · TEI · P0** — Expor endpoints de dispositivos e comandos
+  - **Passos:** GET /devices, GET /readings/latest, POST /devices/{id}/commands, GET /commands/{id}; controlar permissões.
+  - **Aceitação:** Android e Unity usam a mesma fonte de verdade.
+  - **Prazo:** 2026-12-20
+- [ ] **T111 · TEI · P0** — Associar molduras físicas a quadros
+  - **Passos:** Persistir frame físico, photoId impresso atual e alteração por utilizador; não fingir deteção automática.
+  - **Aceitação:** Associação manual auditável.
+  - **Prazo:** 2026-12-20
+- [ ] **T112 · TEI · P1** — Configurar intervalo remoto de leitura
+  - **Passos:** Endpoint/command com limites para periodicidade do sensor, validação de intervalos e registo de mudanças.
+  - **Aceitação:** Configuração segura e auditada.
+  - **Prazo:** 2026-12-20
+- [ ] **T113 · DDM · P0** — Compose: criar ecrã Dispositivos
+  - **Passos:** Mostrar temperatura, data da última leitura, estado da luz/ventoinha e disponibilidade.
+  - **Aceitação:** Interface sincronizada com backend.
+  - **Prazo:** 2026-12-20
+- [ ] **T114 · DDM · P0** — Compose: implementar controlo e feedback
+  - **Passos:** Enviar estado desejado via API, mostrar pending/confirmed/failed, bloquear quando offline sem fingir sucesso.
+  - **Aceitação:** Botões respeitam ack real.
+  - **Prazo:** 2026-12-20
+- [ ] **T115 · DDM · P0** — Compose: criar ecrã de associação física
+  - **Passos:** Selecionar moldura física 1–3, foto impressa atual e confirmar troca manual com data.
+  - **Aceitação:** Troca refletida no Unity.
+  - **Prazo:** 2026-12-20
+- [ ] **T116 · DDM · P0** — Validar integração Unity as a Library final
+  - **Passos:** Revisar Gradle modules, AndroidManifest, minSdk, namespaces, conflitos de dependências, ciclo de vida e deep link/Intent de abertura.
+  - **Aceitação:** Build Android unificado reproduzível.
+  - **Prazo:** 2026-12-20
+- [ ] **T117 · DDM · P0** — Passar dados da app ao Unity com contrato estável
+  - **Passos:** Passar IDs e token de sessão por mecanismo seguro; usar bridge Java/Kotlin↔C# ou REST comum sem expor segredos em logs.
+  - **Aceitação:** Museu abre exposição da sessão correta.
+  - **Prazo:** 2026-12-20
+- [ ] **T118 · DDM · P0** — Gerir saída e retorno de Unity para Compose
+  - **Passos:** Garantir tecla Back, unload, reinstância, orientação e memória; preservar state ViewModel sem duplicar processos.
+  - **Aceitação:** 10 transições sem crash e sem perda de dados.
+  - **Prazo:** 2026-12-20
+- [ ] **T119 · RVA · P0** — AR: configurar AR Foundation e ARCore
+  - **Passos:** Instalar pacotes compatíveis, permissões, câmara, XR Origin/AR Session; testar deteção de planos no Android real.
+  - **Aceitação:** Plano detetado no smartphone compatível.
+  - **Prazo:** 2026-12-20
+- [ ] **T120 · RVA · P0** — AR: colocar quadro numa parede real
+  - **Passos:** Raycast sobre plano vertical, instanciar modelo de moldura, ajustar posição/escala/rotação, mostrar foto escolhida.
+  - **Aceitação:** Quadro virtual ancorado numa parede real.
+  - **Prazo:** 2026-12-20
+- [ ] **T121 · RVA · P1** — AR: validar comportamento sem suporte
+  - **Passos:** Mostrar mensagem adequada se ARCore/serviços não disponíveis; impedir falha silenciosa.
+  - **Aceitação:** Fallback UX e registo de dispositivo.
+  - **Prazo:** 2026-12-20
+- [ ] **T122 · RVA · P0** — RV: selecionar visor e runtime real
+  - **Passos:** Identificar equipamento OpenXR ou alternativa permitida; testar amostra XR antes de prometer versão final.
+  - **Aceitação:** Prova de compatibilidade ou limitação documentada.
+  - **Prazo:** 2026-12-20
+- [ ] **T123 · RVA · P1** — RV: criar visita delimitada e confortável
+  - **Passos:** Configurar XR Origin e input apropriado ao visor, teleporte/locomoção confortável, painel do quadro e saída fácil.
+  - **Aceitação:** Visita de uma exposição em RV testável.
+  - **Prazo:** 2026-12-20
+- [ ] **T124 · RVA · P1** — RV: testar segurança e conforto
+  - **Passos:** Confirmar framerate, desconforto, altura, colisões e possibilidade de interrupção; não bloquear visita sem visor.
+  - **Aceitação:** Check de usabilidade no hardware real.
+  - **Prazo:** 2026-12-20
+- [ ] **T125 · Integração · P0** — DEMO 2: física e virtual sincronizadas
+  - **Passos:** Mostrar 2–3 molduras, sensor real, luz/ventoinha controláveis, estados confirmados no museu e app Android.
+  - **Aceitação:** Vídeo ponta a ponta e logs de comando.
+  - **Prazo:** 2026-12-20
+
+## S6 — Testes, segurança e otimização (21–27 dez.)
+
+- [ ] **T126 · Testes · P0** — Montar conjunto de testes ponta a ponta
+  - **Passos:** Cenarios: importação, análise, correção, ficha, CRUD exposições, mudança de moldura, comando IoT e regresso da cena.
+  - **Aceitação:** Matriz com resultados e evidências.
+  - **Prazo:** 2026-12-27
+- [ ] **T127 · Testes · P0** — Testar autorização e separação de dados
+  - **Passos:** Acesso a imagens de outro utilizador, tokens expirados, permissões de comando e URIs protegidas.
+  - **Aceitação:** Testes negativos passam sem fuga de dados.
+  - **Prazo:** 2026-12-27
+- [ ] **T128 · Testes · P0** — Testar falhas de rede e temporizações
+  - **Passos:** Desligar Wi-Fi durante upload, inferência, consulta Unity, MQTT e controlo; tratar stale, retry e timeout.
+  - **Aceitação:** Erros apresentados corretamente e app recupera.
+  - **Prazo:** 2026-12-27
+- [ ] **T129 · Testes · P0** — Medir latência e fiabilidade IoT
+  - **Passos:** Enviar 100 comandos/atuador quando viável, contabilizar confirmações, tempo pedido→ack→reflexo visual, percentil 95 e falhas.
+  - **Aceitação:** Tabela de medições com logs datados.
+  - **Prazo:** 2026-12-27
+- [ ] **T130 · Testes · P0** — Medir desempenho Android/Unity
+  - **Passos:** Testar no hardware da equipa com muitas fotografias: FPS, RAM, arranque, texturas e 10 aberturas/fechos do Unity.
+  - **Aceitação:** Registo de performance e correções prioritárias.
+  - **Prazo:** 2026-12-27
+- [ ] **T131 · Testes · P0** — Validar imagens e privacidade
+  - **Passos:** Remoção de foto elimina miniatura/derivados associados, evita fotos pessoais em treino e minimiza metadados EXIF/localização.
+  - **Aceitação:** Prova de exclusão e fluxo de consentimento.
+  - **Prazo:** 2026-12-27
+- [ ] **T132 · Testes · P0** — Executar avaliação final de modelos
+  - **Passos:** Test set independente, matriz de confusão, macro-F1, tamanho, latência total upload→sugestão e erros típicos.
+  - **Aceitação:** Métricas reais reproduzíveis.
+  - **Prazo:** 2026-12-27
+- [ ] **T133 · Testes · P1** — Preparar teste exploratório de utilizadores
+  - **Passos:** Comparar galeria vs museu em tarefas equivalentes, contrabalançar ordem e registar duração, erros e comentários.
+  - **Aceitação:** Protocolo e consentimento claros.
+  - **Prazo:** 2026-12-27
+- [ ] **T134 · Testes · P1** — Realizar sessões com utilizadores disponíveis
+  - **Passos:** Meta do artigo: 12–18 adultos se exequível; caso não seja, registar amostra real e limitação.
+  - **Aceitação:** Tabela anonimizada com observações reais.
+  - **Prazo:** 2026-12-27
+- [ ] **T135 · RVA · P0** — Otimizar últimos assets Blender/Unity
+  - **Passos:** Corrigir geometria pesada, materiais, draw calls, occlusion/frustum e tamanhos de texturas; manter versão final rastreável.
+  - **Aceitação:** Build final estável no dispositivo.
+  - **Prazo:** 2026-12-27
+- [ ] **T136 · DDM · P0** — Rever fluxos de erro e acessibilidade
+  - **Passos:** Rotação, background/resume, permissões de Photo Picker, teclado, estados de carregamento e dimensões de ecrã.
+  - **Aceitação:** Problemas P0 corrigidos.
+  - **Prazo:** 2026-12-27
+- [ ] **T137 · TEI · P0** — Testar restabelecimento de estado IoT
+  - **Passos:** Reiniciar broker/dispositivo e enviar comandos duplicados ou tardios; distinguir último estado confirmado de leitura atual.
+  - **Aceitação:** Não reporta sucesso inexistente.
+  - **Prazo:** 2026-12-27
+- [ ] **T138 · Integração · P0** — Ensaio geral com checklist de demonstração
+  - **Passos:** Fazer fluxo completo com configuração limpa, gravação e plano de fallback quando algum equipamento não está disponível.
+  - **Aceitação:** Demo executável por outro colega.
+  - **Prazo:** 2026-12-27
+
+## S7 — Documentação e release (28 dez.–3 jan.)
+
+- [ ] **T139 · Geral · P0** — Congelar funcionalidades até 02/01
+  - **Passos:** Resolver bugs críticos antes da release; não introduzir novas dependências ou grandes mudanças de stack.
+  - **Aceitação:** Tag release-candidate criada.
+  - **Prazo:** 2027-01-03
+- [ ] **T140 · Geral · P0** — Preparar documentação de arquitetura real
+  - **Passos:** Diagrama atualizado, responsabilidades das UCs, entidades, sincronização, API, MQTT, Blender→Unity e Android→Unity.
+  - **Aceitação:** Documento de arquitetura corresponde ao código.
+  - **Prazo:** 2027-01-03
+- [ ] **T141 · Geral · P0** — Preparar README e guia de instalação
+  - **Passos:** Versões de Android Studio/Unity/Blender/Python, comandos de backend e MQTT, BD, build APK, configuração do ESP32 e demonstração.
+  - **Aceitação:** Colega reproduz a instalação.
+  - **Prazo:** 2027-01-03
+- [ ] **T142 · Geral · P0** — Organizar ficheiros e artefactos
+  - **Passos:** Entregar fontes .blend, FBX, projeto Unity, Kotlin/Compose, backend, scripts/modelos IA, firmware, migrações e exemplos sem segredos.
+  - **Aceitação:** Repositório limpo e completo.
+  - **Prazo:** 2027-01-03
+- [ ] **T143 · Geral · P0** — Finalizar relatório(s) exigidos
+  - **Passos:** Objetivos, estado da arte, decisões, implementação real, resultados, limitações e trabalho de cada UC; seguir modelos oficiais.
+  - **Aceitação:** Relatório(s) revistos pela equipa.
+  - **Prazo:** 2027-01-03
+- [ ] **T144 · Geral · P0** — Criar diagramas finais e provas
+  - **Passos:** Diagrama componentes, sequência foto→IA→museu, ciclo IoT, ER/DB, capturas Blender/Unity/Compose e fotos do protótipo.
+  - **Aceitação:** Evidências legíveis com legendas.
+  - **Prazo:** 2027-01-03
+- [ ] **T145 · Geral · P1** — Preparar comparação de tecnologias
+  - **Passos:** Justificar Unity vs Godot/SceneView, servidor vs mobile inference, MQTT vs HTTP polling, Blender FBX vs GLB.
+  - **Aceitação:** Tabela de opções e trade-offs.
+  - **Prazo:** 2027-01-03
+- [ ] **T146 · Geral · P0** — Consolidar resultados de avaliação
+  - **Passos:** Separar metas propostas de resultados realmente observados; apresentar tabelas, métodos, dispositivos e tamanhos de amostra.
+  - **Aceitação:** Métricas verificadas e limites explícitos.
+  - **Prazo:** 2027-01-03
+- [ ] **T147 · Geral · P1** — Elaborar vídeo e slides, se exigidos
+  - **Passos:** Narrativa curta: problema → app → classificação → museu → gémeo digital → RV/RA → resultados.
+  - **Aceitação:** Demonstração alinhada com rubrica.
+  - **Prazo:** 2027-01-03
+- [ ] **T148 · Geral · P0** — Preparar release em instalação limpa
+  - **Passos:** Executar builds, Docker Compose, arranque do IoT, APK e smoke test de uma foto sem depender do PC original.
+  - **Aceitação:** Guia seguido num ambiente limpo.
+  - **Prazo:** 2027-01-03
+- [ ] **T149 · Geral · P0** — Criar cópias de segurança e pacotes de submissão
+  - **Passos:** ZIP com ficheiros necessários, git tag, hashes ou listagem de ficheiros, backup BD fictícia, backups JSON da checklist.
+  - **Aceitação:** Pacotes guardados em dois locais.
+  - **Prazo:** 2027-01-03
+- [ ] **T150 · Geral · P0** — Confirmar requisitos de entrega por UC
+  - **Passos:** Conferir formatos, nomes, anexos, link repositório, vídeo, apresentação e datas/horas nas plataformas oficiais.
+  - **Aceitação:** Quatro checklists de entrega aprovadas.
+  - **Prazo:** 2027-01-03
+
+## S8 — Verificação e entrega (4–5 jan.)
+
+- [ ] **T151 · Geral · P0** — Executar smoke test a 04/01
+  - **Passos:** Testar arranque backend/app/Unity, importar uma foto, classificar, confirmar, mostrar quadro, temperatura e um comando físico.
+  - **Aceitação:** Prova de funcionamento final.
+  - **Prazo:** 2027-01-05
+- [ ] **T152 · Geral · P0** — Rever ficheiros e links de submissão
+  - **Passos:** Abrir ZIPs/PDFs/APK, verificar permissões, links de repositório e credenciais de demonstração não sensíveis.
+  - **Aceitação:** Sem ficheiros vazios ou links partidos.
+  - **Prazo:** 2027-01-05
+- [ ] **T153 · Geral · P0** — Submeter todos os entregáveis até 05/01
+  - **Passos:** Entregar nas plataformas de cada UC dentro da hora estabelecida, com margem para falhas de rede.
+  - **Aceitação:** Submissões registadas.
+  - **Prazo:** 2027-01-05
+- [ ] **T154 · Geral · P0** — Guardar comprovativos de entrega
+  - **Passos:** Fazer screenshot/guardar recibos e partilhar confirmação com a equipa.
+  - **Aceitação:** Comprovativos em pasta docs/delivery.
+  - **Prazo:** 2027-01-05
+
