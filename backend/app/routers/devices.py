@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .. import mqtt
 from ..db import get_db
 from ..deps import current_user
 from ..models import Command, Device, Reading, utcnow
@@ -48,8 +49,7 @@ def create_command(device_id: uuid.UUID, body: CommandIn, db: Session = Depends(
         if existing is not None:  # idempotente: mesmo commandId devolve o mesmo comando
             if existing.device_id != device_id:
                 raise HTTPException(409, "commandId já usado noutro dispositivo")
-            return existing
-    # shortcut: fica em "requested"; a publicação MQTT e a máquina de estados entram em T099/T107.
+            return mqtt.expire_if_needed(db, existing)
     cmd = Command(
         id=body.command_id or uuid.uuid4(),
         device_id=device_id,
@@ -58,6 +58,7 @@ def create_command(device_id: uuid.UUID, body: CommandIn, db: Session = Depends(
     )
     db.add(cmd)
     db.commit()
+    mqtt.publish_command(db, cmd)
     return cmd
 
 
@@ -66,4 +67,4 @@ def get_command(command_id: uuid.UUID, db: Session = Depends(get_db)):
     cmd = db.get(Command, command_id)
     if cmd is None:
         raise HTTPException(404, "Comando não encontrado")
-    return cmd
+    return mqtt.expire_if_needed(db, cmd)

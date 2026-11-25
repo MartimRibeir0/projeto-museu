@@ -48,7 +48,7 @@ alembic upgrade head              # cria dev.db (SQLite) por omissão
 uvicorn app.main:app --reload
 python -m pytest -q               # testes
 ```
-Variáveis: `DATABASE_URL` (omissão `sqlite:///./dev.db`), `STORAGE_DIR` (omissão `./storage`), `MAX_UPLOAD_BYTES` (omissão 10 MB).
+Variáveis: `DATABASE_URL` (omissão `sqlite:///./dev.db`), `STORAGE_DIR` (omissão `./storage`), `MAX_UPLOAD_BYTES` (omissão 10 MB), `MQTT_HOST` (vazio = ponte MQTT desligada; no Docker é `mqtt`), `MQTT_PORT` (omissão 1883).
 
 Nova migração depois de mudar `app/models.py`:
 ```sh

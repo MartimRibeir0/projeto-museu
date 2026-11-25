@@ -6,6 +6,12 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 
 ## Registo de progresso
 
+### 2026-11-25
+- **Feito:** T022, T052, T055, T099.
+- **Em curso:** T056, T107 (ver nota em cada tarefa).
+- **Verificado com Docker:** `docker compose up --build` (PostgreSQL 16 + Mosquitto 2 + backend) + `iot/simulator.py`: leituras e estado chegam à API, comando à luz passa `sent → confirmed` com o ack do simulador; migração `downgrade base → upgrade head` em PostgreSQL.
+- **Atalho resolvido:** comandos já são publicados no MQTT (`backend/app/mqtt.py`).
+
 ### 2026-11-18
 - **Feito:** T005, T006, T051, T053, T054.
 - **Em curso:** T004, T019, T022, T052, T055, T056, T057 (ver nota em cada tarefa).
@@ -103,11 +109,11 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Não atuar diretamente sobre instalação elétrica/rede nem AC sem interface adequada; preferir LED/ventoinha em baixa tensão.
   - **Aceitação:** Esquema seguro validado antes de montar.
   - **Prazo:** 2026-11-22
-- [ ] **T022 · TEI · P0** — Fazer prova MQTT e estados
+- [x] **T022 · TEI · P0** — Fazer prova MQTT e estados
   - **Passos:** Instalar broker local; publicar leitura simulada e comando com correlationId e ack de aplicação, testando ligação/desligação.
   - **Aceitação:** Logs completos do ciclo de comando.
   - **Prazo:** 2026-11-22
-  - **Em curso (2026-11-18):** `iot/simulator.py` publica leituras e estado (com LWT offline), recebe comandos com `commandId` e responde `ack`; lógica testada em `iot/test_simulator.py`. **Falta:** correr com o Mosquitto e guardar os logs (Docker estava desligado).
+  - **Em curso (2026-11-18):** `iot/simulator.py` publica leituras e estado (com LWT offline), recebe comandos com `commandId` e responde `ack`; lógica testada em `iot/test_simulator.py`. **Feito (2026-11-25):** corrido com o Mosquitto do `docker compose`; log do simulador: `comando d554fd4f-… -> applied {'on': True}` e API devolveu `sent` no POST e `confirmed` no GET seguinte.
 - [ ] **T023 · Integração · P0** — Executar integração vertical mínima
   - **Passos:** Kotlin abre visão Unity, Unity carrega um ID de fotografia fictício, mostra quadro e regressa à app; usar a mesma API ou contrato.
   - **Aceitação:** Vídeo/print de interação entre módulos.
@@ -228,11 +234,11 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Aceitação:** GET /health e docs executáveis.
   - **Prazo:** 2026-11-29
   - **Feito (2026-11-18):** `backend/app/` com routers `/health`, `/photos`, `/exhibitions`, `/devices`, `/commands`; OpenAPI em `/docs` verificado a correr. Sem camadas services/repos separadas (routers + schemas + models chegam por agora).
-- [ ] **T052 · TEI · P0** — Criar tabelas PostgreSQL e migrações
+- [x] **T052 · TEI · P0** — Criar tabelas PostgreSQL e migrações
   - **Passos:** Tabelas users, photos, labels, exhibitions, exhibition_photos, frames, physical_frames, devices, readings, commands; PK/FK e timestamps.
   - **Aceitação:** Migração executada e reversível.
   - **Prazo:** 2026-11-29
-  - **Em curso (2026-11-18):** Todas as tabelas pedidas em `backend/app/models.py`; migração `backend/alembic/versions/55c9058a2430_initial_schema.py`; upgrade → downgrade → upgrade testado em SQLite. **Falta:** correr em PostgreSQL.
+  - **Em curso (2026-11-18):** Todas as tabelas pedidas em `backend/app/models.py`; migração `backend/alembic/versions/55c9058a2430_initial_schema.py`; upgrade → downgrade → upgrade testado em SQLite. **Feito (2026-11-25):** `alembic upgrade head`, `downgrade base` e `upgrade head` em PostgreSQL 16 (Docker).
 - [x] **T053 · TEI · P0** — Implementar upload de ficheiro
   - **Passos:** Validar MIME e tamanho, gerar ID e path seguro, guardar original e miniatura; impedir traversal e sobrescrita.
   - **Aceitação:** Foto enviada e consultável por ID.
@@ -243,16 +249,16 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Aceitação:** Testes básicos de API passam.
   - **Prazo:** 2026-11-29
   - **Feito (2026-11-18):** CRUD de fotografias e exposições + associar/mover/desassociar foto com `position`; 404/413/415/422 coerentes. 10 testes em `backend/tests/test_api.py` passam.
-- [ ] **T055 · TEI · P0** — Configurar Docker Compose de desenvolvimento
+- [x] **T055 · TEI · P0** — Configurar Docker Compose de desenvolvimento
   - **Passos:** Backend, PostgreSQL e Mosquitto; volumes, healthchecks e ficheiro .env.example sem passwords reais.
   - **Aceitação:** Ambiente sobe com comando documentado.
   - **Prazo:** 2026-11-29
-  - **Em curso (2026-11-18):** `docker-compose.yml` com PostgreSQL 16, Mosquitto 2 e backend, volumes, healthchecks e `.env.example`. **Falta:** `docker compose up` real (Docker estava desligado).
+  - **Em curso (2026-11-18):** `docker-compose.yml` com PostgreSQL 16, Mosquitto 2 e backend, volumes, healthchecks e `.env.example`. **Feito (2026-11-25):** `docker compose up --build` sobe os três serviços saudáveis; backend com `MQTT_HOST: mqtt`.
 - [ ] **T056 · TEI · P0** — Implementar IoT simulado com MQTT
   - **Passos:** Publicar temperatura/estado periodicamente e receber setDesiredState com ack e status observado; usar IDs únicos de comando.
   - **Aceitação:** Dashboard de broker mostra eventos.
   - **Prazo:** 2026-11-29
-  - **Em curso (2026-11-18):** Simulador com temperatura periódica, estado observado, ack, deduplicação por `commandId` e expiração. **Falta:** ver os eventos no broker.
+  - **Em curso (2026-11-18):** Simulador com temperatura periódica, estado observado, ack, deduplicação por `commandId` e expiração. **2026-11-25:** eventos confirmados através da API (leituras, estado, ack). **Falta:** captura num dashboard do broker (ex.: MQTT Explorer).
 - [ ] **T057 · Integração · P0** — Definir pasta de contratos partilhados
   - **Passos:** Criar OpenAPI, JSON de exemplo e convenções de assetID/photoID/exhibitionID; fixar versões antes da ligação real.
   - **Aceitação:** Android, Unity e API interpretam os mesmos IDs.
@@ -428,10 +434,11 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** MQTT telemetria periódica, lastSeen, online/offline, lightObserved e fanObserved; validar diferenciação entre pedido e observação.
   - **Aceitação:** Valores reais exibidos no backend.
   - **Prazo:** 2026-12-13
-- [ ] **T099 · TEI · P0** — Implementar pipeline MQTT do servidor
+- [x] **T099 · TEI · P0** — Implementar pipeline MQTT do servidor
   - **Passos:** Subscrever leituras e acks; guardar readings e estado atual no PostgreSQL; expor GET /devices/status.
   - **Aceitação:** API devolve leitura com timestamp.
   - **Prazo:** 2026-12-13
+  - **Feito (2026-11-25):** `backend/app/mqtt.py` subscreve `readings/+`, `status/+` e `ack/+`, guarda leituras e estado (online, lastSeen, observedState) e cria os 3 dispositivos de demonstração com os IDs do simulador. O estado atual sai em `GET /devices` (não se criou `/devices/status` à parte). Testes em `backend/tests/test_mqtt.py`.
 - [ ] **T100 · Integração · P0** — DEMO intermédia: 3 exposições e 10 fotografias
   - **Passos:** Testar criar, editar, apagar e reorganizar fotos no Android e ver resultados no museu; recolher problemas.
   - **Aceitação:** Sessão demonstrável antes de 13/12.
@@ -467,6 +474,7 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** requested→sent→confirmed/failed/timeout; confirmação de transporte ≠ confirmação física; persistir histórico e tentativas.
   - **Aceitação:** Sequência coerente nos logs.
   - **Prazo:** 2026-12-20
+  - **Em curso (2026-11-25):** `requested` (broker indisponível) → `sent` (broker aceitou) → `confirmed` (ack `applied` com estado observado igual ao pedido) / `failed` (`rejected` ou estado diferente) / `timeout` (ack `expired` ou sem ack até `expiresAt`, avaliado ao ler). **Falta:** histórico de transições e tentativas/reenvio.
 - [ ] **T108 · TEI · P0** — Implementar deduplicação e idempotência
   - **Passos:** Cada pedido inclui commandId, estado desejado e expiração; dispositivo ignora repetidos antigos e evita alternância ambígua.
   - **Aceitação:** Enviar repetido mantém mesmo estado.
