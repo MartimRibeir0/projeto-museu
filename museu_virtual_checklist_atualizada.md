@@ -1,14 +1,16 @@
 # Museu Virtual Pessoal — Checklist (atualizada)
 
-Exportado em 18/11/2026, 16:10:33. Concluídas: 5/154 (em curso: 7). Última atualização: 18/11/2026.
+Exportado em 18/11/2026, 16:10:33. Concluídas: 10/154 (em curso: 6). Última atualização: 18/11/2026.
 PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 > Prioridade P0 = bloqueante; P1 = importante; P2 = extra.
 
 ## Registo de progresso
 
 ### 2026-11-25
-- **Feito:** T022, T052, T055, T099.
-- **Em curso:** T056, T107 (ver nota em cada tarefa).
+- **Feito:** T015, T022, T052, T055, T099.
+- **Em curso:** T013, T056, T107 (ver nota em cada tarefa).
+- **Android:** projeto base em `app-android/` testado no emulador Pixel_8 (Android Studio já instalado).
+- **Blender:** instalado pela Microsoft Store (5.3), mas o `blender.exe` não pode ser chamado por scripts ("Access is denied"). Para automatizar T024+ é preciso ativar o alias `blender.exe` em Definições → Aplicações → Definições avançadas → Aliases de execução, ou instalar a versão .zip/.msi de blender.org.
 - **Verificado com Docker:** `docker compose up --build` (PostgreSQL 16 + Mosquitto 2 + backend) + `iot/simulator.py`: leituras e estado chegam à API, comando à luz passa `sent → confirmed` com o ack do simulador; migração `downgrade base → upgrade head` em PostgreSQL.
 - **Atalho resolvido:** comandos já são publicados no MQTT (`backend/app/mqtt.py`).
 
@@ -76,14 +78,16 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Criar projeto Empty Activity, Material 3, navegação mínima e packages data/domain/ui; fixar Gradle e SDK compatíveis.
   - **Aceitação:** App inicia no telemóvel.
   - **Prazo:** 2026-11-22
+  - **Em curso (2026-11-25):** `app-android/` com Compose + Material 3 e navegação inferior (Coleção, Nova fotografia, Exposições); `./gradlew assembleDebug testDebugUnitTest` passa; app arranca no emulador Pixel_8. Packages: só `ui/` por agora (`data/` e `domain/` entram quando houver API). **Falta:** testar num telemóvel real.
 - [ ] **T014 · DDM · P0** — Fazer spike Unity ↔ Android Studio
   - **Passos:** Exportar Unity como projeto Gradle, identificar unityLibrary e launcher; incluir biblioteca num host Android, abrir fullscreen e regressar à Compose UI.
   - **Aceitação:** PoC abre/fecha Unity sem crash.
   - **Prazo:** 2026-11-22
-- [ ] **T015 · DDM · P0** — Testar Photo Picker Android
+- [x] **T015 · DDM · P0** — Testar Photo Picker Android
   - **Passos:** Usar ActivityResultContracts.PickVisualMedia, obter Uri, ler imagem sem pedir acesso total à galeria; identificar limites da URI e cópia temporária.
   - **Aceitação:** Imagem escolhida e mostrada no Compose.
   - **Prazo:** 2026-11-22
+  - **Feito (2026-11-25):** `app-android/app/src/main/java/pt/ipleiria/museuvirtual/ui/NewPhotoScreen.kt`: `PickVisualMedia.ImageOnly`, sem permissões; imagem 4000×3000 aberta reduzida (≤ 1600 px) e mostrada. Prova em `docs/evidencias/2026-11-25-photo-picker.png`. Limites do Uri (leitura temporária, copiar antes do upload) em `app-android/README.md`.
 - [ ] **T016 · DDM · P1** — Desenhar mapa de navegação
   - **Passos:** Ecrãs Início, Coleção, Nova Fotografia, Editar Ficha, Exposições, Museu, Definições e Controlo; estados loading/erro/vazio.
   - **Aceitação:** Fluxo navegável com dados fictícios.

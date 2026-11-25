@@ -13,7 +13,7 @@ Projeto de Mestrado em Engenharia Informática — UCs TEI, RVA, DDM e AAP (2026
 | `iot/` | Simulador MQTT do módulo IoT (até haver ESP32) | feito |
 | `docs/` | ADRs e documentação técnica | iniciado |
 | `DOCUMENTACAO/` | Proposta, artigo e requisitos DDM (.docx) | — |
-| `app-android/` | App Kotlin/Jetpack Compose | por fazer |
+| `app-android/` | App Kotlin/Jetpack Compose | base feita (navegação + Photo Picker) |
 | `museum-unity/` | Museu Unity (3D, RV, RA) | por fazer |
 | `blender/` | Modelos .blend e FBX | por fazer |
 | `ml/` | Dataset, CNN e MobileNetV2 | por fazer |
