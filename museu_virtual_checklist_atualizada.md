@@ -1,10 +1,14 @@
 # Museu Virtual Pessoal — Checklist (atualizada)
 
-Exportado em 18/11/2026, 16:10:33. Concluídas: 10/154 (em curso: 6). Última atualização: 18/11/2026.
+Exportado em 18/11/2026, 16:10:33. Concluídas: 16/154 (em curso: 6). Última atualização: 18/11/2026.
 PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 > Prioridade P0 = bloqueante; P1 = importante; P2 = extra.
 
 ## Registo de progresso
+
+### 2026-11-26
+- **Feito:** T024, T025, T026, T027, T028, T029.
+- **Blender:** controlado pelo addon "MCP for Blender" (porta 9876, só localhost). O museu é gerado por `blender/build_museum.py` (enviado com `blender/send_to_blender.py`), por isso qualquer elemento da equipa o pode refazer. `.blend` e `.fbx` vão para o Git LFS.
 
 ### 2026-11-25
 - **Feito:** T015, T022, T052, T055, T099.
@@ -125,30 +129,36 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 
 ## S2 — Blender, estrutura e serviços (23–29 nov.)
 
-- [ ] **T024 · RVA · P0** — Blender: criar ficheiro-base e convenções
+- [x] **T024 · RVA · P0** — Blender: criar ficheiro-base e convenções
   - **Passos:** Criar museum_master.blend, coleções Architecture/Frames/Props/DigitalTwin, unidades métricas, origem e naming consistente; guardar fontes no Git LFS se necessário.
   - **Aceitação:** Cena organizada e versionada.
   - **Prazo:** 2026-11-29
-- [ ] **T025 · RVA · P0** — Blender: desenhar planta simples do museu
+  - **Feito (2026-11-26):** `blender/museum_master.blend` com coleções Architecture/Frames/Props/DigitalTwin (+ Annotations e _Templates, que não são exportadas), unidades métricas, Y = percurso, Z = cima, origem na porta de entrada. Nomes: `Hall_*`, `CorridorModule_NN`, `MNN_Slot_L/R`, `Frame_<Variante>`, `Photo_<Variante>`, `Twin_*`. `.blend`/`.fbx` em Git LFS (`.gitattributes`).
+- [x] **T025 · RVA · P0** — Blender: desenhar planta simples do museu
   - **Passos:** Esboçar entrada, corredor modular, salas/exposições e zona do gémeo; estabelecer largura para circulação e escalas realistas.
   - **Aceitação:** Planta 2D / esquema de circulação.
   - **Prazo:** 2026-11-29
-- [ ] **T026 · RVA · P0** — Blender: construir blockout 3D
+  - **Feito (2026-11-26):** Planta em `docs/blender/planta.jpg`: entrada 8×8 m (porta 2×2,4 m) → corredor de 3 módulos de 4 m com 4 m de largura → sala do gémeo digital 6×6 m. Pé-direito 3,2 m.
+- [x] **T026 · RVA · P0** — Blender: construir blockout 3D
   - **Passos:** Com cubos e planos, criar piso, paredes, teto, aberturas e porta; validar escala do visitante e altura dos quadros.
   - **Aceitação:** Percurso completo em geometria simples.
   - **Prazo:** 2026-11-29
-- [ ] **T027 · RVA · P0** — Blender: modelar segmento modular de corredor
+  - **Feito (2026-11-26):** Percurso completo em caixas (piso, paredes, tetos, porta com lintel, passagens). Escala validada com `Visitor_1m75` e quadros centrados a 1,6 m. Vista do visitante em `docs/blender/blockout.jpg`. Export: `blender/export/museum_blockout.fbx`.
+- [x] **T027 · RVA · P0** — Blender: modelar segmento modular de corredor
   - **Passos:** Criar módulo reutilizável de parede/piso/teto com dimensões fixas; testar repetição sem folgas para expansão.
   - **Aceitação:** Módulo duplicável com encaixe correto.
   - **Prazo:** 2026-11-29
-- [ ] **T028 · RVA · P0** — Blender: criar moldura parametrizável
+  - **Feito (2026-11-26):** Módulo `CorridorModule` (piso + 2 paredes + teto filho), 4 m de comprimento de y=0 a y=4 local, por isso as cópias encaixam sem folgas (3 cópias na cena). Dois slots (empties `MNN_Slot_L/R`) por módulo, virados para o centro, para o Unity pôr quadros. Export: `blender/export/corridor_module.fbx`.
+- [x] **T028 · RVA · P0** — Blender: criar moldura parametrizável
   - **Passos:** Modelar uma moldura com área interna plana para fotografia, orientação e proporções; manter mesh da imagem separada.
   - **Aceitação:** Moldura e superfície independentes.
   - **Prazo:** 2026-11-29
-- [ ] **T029 · RVA · P0** — Blender: criar variantes de quadros
+  - **Feito (2026-11-26):** Moldura com origem no centro da fotografia, virada para -Y; a fotografia é um objeto filho separado (`Photo_*`, plano com UV 0..1, material `PhotoPlaceholder`) para o Unity trocar a textura.
+- [x] **T029 · RVA · P0** — Blender: criar variantes de quadros
   - **Passos:** Preparar quadros horizontal, vertical e quadrado ou suporte com letterbox sem distorcer fotos.
   - **Aceitação:** Três proporções verificadas.
   - **Prazo:** 2026-11-29
+  - **Feito (2026-11-26):** Três variantes com área interior 1,2×0,9 (horizontal 4:3), 0,9×1,2 (vertical) e 1,0×1,0 (quadrado); propriedade `aspect` em cada uma. Outras proporções: letterbox no Unity. Exports `blender/export/frame_{landscape,portrait,square}.fbx`.
 - [ ] **T030 · RVA · P1** — Blender: criar elementos secundários
   - **Passos:** Modelar plintos, bancos, sinalética, rodapés e portas só se acrescentarem legibilidade, evitando detalhe excessivo.
   - **Aceitação:** Ambiente reconhecível e leve.
