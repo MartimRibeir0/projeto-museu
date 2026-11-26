@@ -1,14 +1,20 @@
 # Museu Virtual Pessoal — Checklist (atualizada)
 
-Exportado em 18/11/2026, 16:10:33. Concluídas: 18/154 (em curso: 7). Última atualização: 18/11/2026.
+Exportado em 18/11/2026, 16:10:33. Concluídas: 27/154. Última atualização: 26/11/2026 (noite).
 PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 > Prioridade P0 = bloqueante; P1 = importante; P2 = extra.
 
 ## Registo de progresso
 
 ### 2026-11-26
-- **Feito:** T024, T025, T026, T027, T028, T029, T030, T031.
-- **Em curso:** T032 (UVs e materiais PBR simples feitos; faltam texturas).
+- **Feito:** T024, T025, T026, T027, T028, T029, T030, T031, T032, T033, T034, T035 (parte Blender toda feita; import no Unity e FPS no Android ficam em T036/T038).
+- **Feito (Unity):** T010, T012, T014, T036, T037. **Em curso:** T038 (navegação touch e botão "Voltar" a funcionar no emulador; falta telemóvel real e abrir quadro).
+- **RV (em curso, falta testar em telemóvel real):** T039, T122, T123. Cardboard (ecrã dividido + giroscópio), comando Xbox (Input System) e outro telemóvel como comando pela rede Wi-Fi (link com token, página no browser). Renders em `docs/unity/rv.png` e `docs/unity/quadro.png`.
+- **Unity na app:** separador "Exposições" → "Visitar museu 3D" abre o Unity (processo `:unity`); "Voltar" ou recuar do Android regressa à app. Exportar primeiro do Unity (menu "Museu → 4"); sem export a app compila sem 3D.
+- **Android (Unity):** `MuseumBuild.Apk` gera `museum-unity/Builds/museu3d.apk` (IL2CPP, ARM64 + x86_64, development); instalado e aberto no emulador Pixel_8 sem erros do Unity no logcat.
+- **Unity:** projeto em `museum-unity/`, gerado a partir do Blender por `Assets/Editor/MuseumSetup.cs` (menu "Museu" ou `-executeMethod MuseumSetup.RunAll`). Renders em `docs/unity/`.
+- **Correção:** o export FBX com `bake_space_transform` deitava as fotografias e rodava as molduras dos slots; desligado. No Unity usar "Bake Axis Conversion".
+- **Telemóvel real (Samsung A55, Android 17):** app com o museu instalada e a correr; navegação a funcionar (velocidade subida para 3 m/s, 2,2 m/s em RV). Comando por outro telemóvel: servidor do museu confirmado pela rede Wi-Fi (POST do comando → 204). Causa do link que não abria: **permissão nova do Android 17 `ACCESS_LOCAL_NETWORK`** (sem ela o sistema corta a rede local à app); agora pedida na app. Também mudada a porta 8765 → 47615 (colidia com `adb reverse`).
 - **Blender:** controlado pelo addon "MCP for Blender" (porta 9876, só localhost). O museu é gerado por `blender/build_museum.py` (enviado com `blender/send_to_blender.py`), por isso qualquer elemento da equipa o pode refazer. `.blend` e `.fbx` vão para o Git LFS.
 
 ### 2026-11-25
@@ -67,27 +73,31 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Especificar evidência por tarefa, alvo provisório de macro-F1, teste galeria vs museu, latência de comando e tratamento de falhas.
   - **Aceitação:** Plano inicial de avaliação.
   - **Prazo:** 2026-11-22
-- [ ] **T010 · RVA · P0** — Instalar e fixar versões de Blender e Unity
+- [x] **T010 · RVA · P0** — Instalar e fixar versões de Blender e Unity
   - **Passos:** Instalar Blender, Unity Hub e editor LTS disponível; módulo Android Build Support; escolher URP ou configuração mobile equivalente e registar versões.
   - **Aceitação:** Projetos .blend e Unity abrem e fazem build.
   - **Prazo:** 2026-11-22
+  - **Feito (2026-11-26):** Blender 5.3 (Microsoft Store) e Unity 6000.0.85f2 (6 LTS, Hub 4.0.2) instalados; projeto Unity em Built-in Render Pipeline (cena pequena, luz cozinhada: chega para mobile sem URP). Versão fixada em `museum-unity/ProjectSettings/ProjectVersion.txt`. Módulo Android Build Support (+ OpenJDK, SDK & NDK) instalado; build Android feito (T012).
 - [ ] **T011 · RVA · P0** — Verificar telemóvel, GPU e visor RV
   - **Passos:** Testar build 3D Android no equipamento real; inventariar suporte ARCore e visor OpenXR, evitando assumir compatibilidade.
   - **Aceitação:** Checklist de hardware e captura da prova.
   - **Prazo:** 2026-11-22
-- [ ] **T012 · RVA · P0** — Criar cena Unity mínima e compilar Android
+  - **Em curso (2026-11-26):** Telemóvel: Samsung Galaxy A55 (SM-A556B), Android 17, ARM64; museu (APK com Unity) corre e navega. Visor: óculos tipo Cardboard (sem OpenXR, ver T122). **Falta:** capturas/FPS e confirmar ARCore (T119).
+- [x] **T012 · RVA · P0** — Criar cena Unity mínima e compilar Android
   - **Passos:** Cena com chão, cubo/quadro, câmara e controlo; executar em telemóvel; medir fps aproximado e erros.
   - **Aceitação:** APK de teste a abrir no Android.
   - **Prazo:** 2026-11-22
+  - **Feito (2026-11-26):** Em vez da cena mínima, compilou-se logo o museu (`Assets/Editor/MuseumBuild.cs`, menu "Museu → 3. Build APK de teste"): IL2CPP, ARM64 + x86_64, minSdk 28 como a app, paisagem, build de desenvolvimento. APK de 179,5 MB (desenvolvimento, 2 arquiteturas) instalado no emulador Pixel_8: abre, mostra o museu e anda com o joystick touch; sem erros do Unity no logcat. **Falta:** FPS num telemóvel real (emulador não conta; ver T038).
 - [ ] **T013 · DDM · P0** — Criar base Android em Kotlin/Jetpack Compose
   - **Passos:** Criar projeto Empty Activity, Material 3, navegação mínima e packages data/domain/ui; fixar Gradle e SDK compatíveis.
   - **Aceitação:** App inicia no telemóvel.
   - **Prazo:** 2026-11-22
   - **Em curso (2026-11-25):** `app-android/` com Compose + Material 3 e navegação inferior (Coleção, Nova fotografia, Exposições); `./gradlew assembleDebug testDebugUnitTest` passa; app arranca no emulador Pixel_8. Packages: só `ui/` por agora (`data/` e `domain/` entram quando houver API). **Falta:** testar num telemóvel real.
-- [ ] **T014 · DDM · P0** — Fazer spike Unity ↔ Android Studio
+- [x] **T014 · DDM · P0** — Fazer spike Unity ↔ Android Studio
   - **Passos:** Exportar Unity como projeto Gradle, identificar unityLibrary e launcher; incluir biblioteca num host Android, abrir fullscreen e regressar à Compose UI.
   - **Aceitação:** PoC abre/fecha Unity sem crash.
   - **Prazo:** 2026-11-22
+  - **Feito (2026-11-26):** `MuseumBuild.Export` (menu "Museu → 4. Exportar para a app Android") gera `museum-unity/Builds/android-export` (`launcher` + `unityLibrary`; ignorado pelo Git). `app-android/settings.gradle.kts` inclui `:unityLibrary` dessa pasta só se existir (`BuildConfig.HAS_UNITY`) e passa-lhe as propriedades `unity.*`; `buildIl2Cpp` marcado como incompatível com a configuration cache. Manifesto da app: `UnityPlayerGameActivity` no processo `:unity` (ao fechar, o Unity mata o seu processo, não a app) e sem ícone no launcher. Separador "Exposições" → "Visitar museu 3D" (`ExhibitionsScreen.kt`). Unity: `BackToApp.cs` (botão "Voltar" + recuar do Android → `finish()`). Testado no emulador Pixel_8: abre o museu, "Voltar" e recuar regressam à Compose UI, reabre sem crash; app de debug com 54,7 MB. Compatível com AGP 9.4 / Gradle 9.6 sem mexer no export. Validação final da integração (release, assinatura, conflitos): T116.
 - [x] **T015 · DDM · P0** — Testar Photo Picker Android
   - **Passos:** Usar ActivityResultContracts.PickVisualMedia, obter Uri, ler imagem sem pedir acesso total à galeria; identificar limites da URI e cópia temporária.
   - **Aceitação:** Imagem escolhida e mostrada no Compose.
@@ -170,39 +180,48 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Aceitação:** Objetos separados e identificáveis.
   - **Prazo:** 2026-11-29
   - **Feito (2026-11-26):** Sala 6×6 m com 3 molduras físicas na parede do fundo (vertical, horizontal, quadrada; slots `Twin_PhysicalFrame_1..3`), candeeiro suspenso `Twin_Light` (+ `Twin_Light_Bulb`), ventoinha `Twin_Fan` no pedestal, grelha de ventilação `Twin_VentGrille`, sensor `Twin_Sensor` e terminal de controlo `Twin_Terminal` (+ ecrã). Luz, ventoinha e sensor têm `device_id` do contrato. Render: `docs/blender/gemeo.jpg`.
-- [ ] **T032 · RVA · P0** — Blender: UV unwrap e materiais básicos
+- [x] **T032 · RVA · P0** — Blender: UV unwrap e materiais básicos
   - **Passos:** Criar UVs consistentes, materiais simples PBR com Base Color/Roughness, texturas de baixa resolução e sem nós proprietários essenciais.
   - **Aceitação:** Materiais reproduzíveis no Unity.
   - **Prazo:** 2026-11-29
-  - **Em curso (2026-11-26):** UV em todas as meshes (projeção por face, 1 UV = 1 m; fotografias com UV 0..1) e materiais Principled só com Base Color/Roughness/Metallic/Emission. **Falta:** texturas de baixa resolução (parede, chão) e confirmar no Unity.
-- [ ] **T033 · RVA · P0** — Blender: corrigir transforms e pivôs
+  - **Feito (2026-11-26):** UV em todas as meshes (projeção por face, 1 UV = 1 m; fotografias com UV 0..1) e materiais Principled só com Base Color/Roughness/Metallic/Emission. Texturas 256×256 geradas pelo script e sem costura (`blender/export/textures/T_Wall.png` estuque, `T_FloorWood.png` soalho), ligadas à Base Color por um único nó Image Texture. Confirmação final no Unity fica em T036.
+- [x] **T033 · RVA · P0** — Blender: corrigir transforms e pivôs
   - **Passos:** Aplicar scale/rotation aos objetos exportados; colocar pivot útil para interações; rever normais, faces duplicadas e dimensões.
   - **Aceitação:** Sem modelos invertidos ou desescalados.
   - **Prazo:** 2026-11-29
-- [ ] **T034 · RVA · P0** — Blender: exportar FBX para Unity
+  - **Feito (2026-11-26):** Pivôs úteis: móveis e dispositivos pela base, `Twin_Light` no ponto de fixação ao teto, sensor e grelha no centro; rotor da ventoinha separado (`Twin_Fan_Rotor`, filho de `Twin_Fan`) com pivô no eixo, para rodar no Unity. `check_meshes()` em `build_museum.py` falha o build se houver escala/rotação por aplicar, faces degeneradas ou duplicadas, ou normais incoerentes; passa em todos os 82 objetos.
+- [x] **T034 · RVA · P0** — Blender: exportar FBX para Unity
   - **Passos:** Exportar segmentos/molduras/objetos para FBX; testar orientação dos eixos, escala, hierarquia e texturas; manter .blend como fonte.
   - **Aceitação:** 3 modelos importados no Unity sem perda crítica.
   - **Prazo:** 2026-11-29
-- [ ] **T035 · RVA · P1** — Blender: criar LOD/versões leves
+  - **Feito (2026-11-26):** 5 FBX (`museum_blockout`, `corridor_module`, `frame_{landscape,portrait,square}`) com texturas por caminho relativo. `check_fbx()` reimporta cada um no Blender e compara nomes, hierarquia, posição/tamanho, faces, materiais, texturas e `device_id`/`aspect`/`slot`: tudo igual. Encontrou e corrigiu um erro (`bake_space_transform` deitava as fotografias). Import no Unity (com "Bake Axis Conversion" ativo) passa para T036.
+- [x] **T035 · RVA · P1** — Blender: criar LOD/versões leves
   - **Passos:** Reduzir polígonos e materiais repetidos; avaliar atlas de texturas e instâncias; não exportar geometria invisível.
   - **Aceitação:** Cena inicial fluida num Android real.
   - **Prazo:** 2026-11-29
-- [ ] **T036 · RVA · P0** — Unity: importar FBX e reconstruir prefabs
+  - **Feito (2026-11-26):** Faces nunca vistas apagadas (base no chão, topo no teto, fundo da laje), texto com `resolution_u = 3`: cena exportada passou de ~13 mil para 5240 vértices (5926 triângulos). Materiais partilhados (16), só 2 texturas de 256 px: atlas e instâncias não compensam a este tamanho. Medir FPS num Android real passa para T038.
+- [x] **T036 · RVA · P0** — Unity: importar FBX e reconstruir prefabs
   - **Passos:** Criar prefabs MuseumSection, Frame, Prop, DigitalTwinZone; atribuir materiais e colliders apenas onde necessário.
   - **Aceitação:** Cena composta por prefabs reutilizáveis.
   - **Prazo:** 2026-11-29
-- [ ] **T037 · RVA · P0** — Unity: preparar iluminação e câmara
+  - **Nota (vinda de T034):** importar a pasta `blender/export/` inteira (FBX + `textures/`) com "Bake Axis Conversion" ativo e confirmar eixos, escala e texturas.
+  - **Feito (2026-11-26):** `MuseumSetup.cs` copia `blender/export/` para `Assets/Models/Museum` (Bake Axis Conversion, UV2, `device_id`/`aspect`/`slot` no componente `BlenderProps`) e gera os prefabs `MuseumShell` (entrada + sala do gémeo, faz de DigitalTwinZone), `CorridorModule` (= MuseumSection, slots vazios) e `Frame_{Landscape,Portrait,Square}` (com `BoxCollider` para o toque). A cena `Museum.unity` é composta por instâncias: casca + 3 módulos + molduras nos slots, na pose do Blender. Colliders só em paredes, chão e móveis. Eixos, escala e texturas confirmados nos renders `docs/unity/`. Props soltos não têm prefab próprio (estão na casca).
+- [x] **T037 · RVA · P0** — Unity: preparar iluminação e câmara
   - **Passos:** Configurar iluminação baked/estática quando possível, câmara e pós-processamento leve; validar imagem num telemóvel.
   - **Aceitação:** Museu legível e sem custo excessivo.
   - **Prazo:** 2026-11-29
+  - **Feito (2026-11-26):** Luz cozinhada (1 ponto por divisão, lightmap 8 texels/m, 1 mapa 1024, não direcional) + ambiente trilight; só a luz do candeeiro do gémeo (`Twin_Light_Source`) é em tempo real, para seguir o estado do dispositivo. Tudo estático exceto os dispositivos do gémeo. Câmara na 1.ª pessoa a 1,6 m, FOV 60°, sem pós-processamento (custo). Imagem no telemóvel valida-se com T038.
 - [ ] **T038 · RVA · P0** — Unity: implementar navegação 3D mobile
   - **Passos:** Implementar movimento e rotação por joystick/touch, limites, colisões e botão de sair/voltar à coleção.
   - **Aceitação:** Percorrer corredor e abrir quadro num telemóvel.
   - **Prazo:** 2026-11-29
+  - **Nota (vinda de T035):** ao testar no telemóvel, medir FPS da cena inicial (~5,2 mil vértices).
+  - **Em curso (2026-11-26):** `FirstPersonTouch.cs`: metade esquerda do ecrã = joystick virtual, metade direita = olhar; WASD + botão direito no Editor; `CharacterController` contra colliders. O setup verifica que o visitante nasce no chão e não atravessa paredes. Botão "Voltar" e recuar do Android regressam à app (`BackToApp.cs`, T014). Velocidade 3 m/s (2,2 m/s em RV). Já a navegar no Samsung A55. **Falta:** confirmar abrir quadro no telemóvel (T039) e medir FPS.
 - [ ] **T039 · RVA · P0** — Unity: criar hotspot e painel de fotografia
   - **Passos:** Raycast/tap para selecionar moldura, apresentar título/descrição/categoria e fechar detalhe.
   - **Aceitação:** Quadro demonstrativo clicável.
   - **Prazo:** 2026-11-29
+  - **Em curso (2026-11-26):** `MuseumInteraction.cs` + `PhotoPanel.cs` + `FrameInfo.cs`: toque curto no quadro (ou A no comando; em RV, olhar + toque/A) abre um painel 3D (funciona nos dois olhos) com título, forma e descrição; fecha com toque, A, B ou ao afastar-se 2,5 m. Dados por agora de demonstração (slot e forma da moldura) até haver API (T059/T062). Visto no render `docs/unity/quadro.png`. **Falta:** testar no telemóvel.
 - [ ] **T040 · RVA · P1** — Unity: estruturar cenas e pacotes
   - **Passos:** Separar bootstrap, museu, zona XR e assets; organizar pastas Scenes/Prefabs/Materials/Scripts/StreamingAssets.
   - **Aceitação:** Projeto Unity fácil de integrar.
@@ -553,10 +572,12 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Passos:** Identificar equipamento OpenXR ou alternativa permitida; testar amostra XR antes de prometer versão final.
   - **Aceitação:** Prova de compatibilidade ou limitação documentada.
   - **Prazo:** 2026-12-20
+  - **Em curso (2026-11-26):** Escolhido telemóvel + óculos tipo Cardboard (decisão do grupo), sem runtime XR: `VrMode.cs` faz ecrã dividido (2 câmaras, 64 mm entre olhos, FOV 85°) e cabeça pelo giroscópio, em paisagem e ecrã inteiro. Abre pela app ("Visitar em RV (óculos)", extra `vr`), pelo botão "Modo RV" ou pelo Menu do comando. Limitação: sem correção da distorção das lentes nem perfil do visor (Cardboard XR Plugin se fizer falta). **Falta:** prova nos óculos reais.
 - [ ] **T123 · RVA · P1** — RV: criar visita delimitada e confortável
   - **Passos:** Configurar XR Origin e input apropriado ao visor, teleporte/locomoção confortável, painel do quadro e saída fácil.
   - **Aceitação:** Visita de uma exposição em RV testável.
   - **Prazo:** 2026-12-20
+  - **Em curso (2026-11-26):** Input: comando Xbox por Bluetooth (`Pad.cs`, Input System 1.20) ou outro telemóvel como comando (`RemotePad.cs`/`RemoteServer.cs`: servidor HTTP na rede local, porta 47615, link com token para partilhar; página `Resources/remote.html` com 2 joysticks, A/B/RV/Recentrar e aviso para pôr o telemóvel-comando na horizontal; autoverificação `RemoteServerCheck.Run`). Velocidade 3 m/s (2,2 m/s em RV, conforto), viragem aos saltos de 30°, recentrar, retícula. Saída fácil: B/recuar fecha painel → sai do RV → volta à app. Servidor confirmado no Samsung A55 pela Wi-Fi depois de pedir `ACCESS_LOCAL_NETWORK` (Android 17); a app avisa se o telemóvel do museu estiver a fazer hotspot (bloqueio por confirmar com a permissão dada). Link único: botão "Partilhar link do comando" em Exposições, token guardado na app. **Falta:** visita completa com o 2.º telemóvel e com comando Xbox real.
 - [ ] **T124 · RVA · P1** — RV: testar segurança e conforto
   - **Passos:** Confirmar framerate, desconforto, altura, colisões e possibilidade de interrupção; não bloquear visita sem visor.
   - **Aceitação:** Check de usabilidade no hardware real.
