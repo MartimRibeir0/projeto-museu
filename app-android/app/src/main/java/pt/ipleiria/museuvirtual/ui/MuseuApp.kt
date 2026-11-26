@@ -53,6 +53,7 @@ fun MuseuApp() {
                 tabState.SaveableStateProvider(tab.name) {
                     when (tab) {
                         Tab.NEW_PHOTO -> NewPhotoScreen()
+                        Tab.EXHIBITIONS -> ExhibitionsScreen()
                         else -> Text("Por fazer", Modifier.align(Alignment.Center))
                     }
                 }

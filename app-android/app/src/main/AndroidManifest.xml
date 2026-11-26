@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Android 17+: sem esta permissão (pedida em tempo de execução) o sistema corta o tráfego da app na rede local
+         e o telemóvel-comando não chega ao museu (RemotePad no Unity). -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application
         android:allowBackup="false"
@@ -13,6 +18,16 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!-- Museu 3D (unityLibrary): processo próprio, porque ao fechar o Unity mata o processo onde corre;
+             sem ícone próprio no launcher. Sem o módulo (BuildConfig.HAS_UNITY = false) a entrada fica inerte. -->
+        <activity
+            android:name="com.unity3d.player.UnityPlayerGameActivity"
+            android:process=":unity"
+            tools:ignore="MissingClass"
+            tools:node="merge">
+            <intent-filter tools:node="removeAll" />
         </activity>
     </application>
 </manifest>

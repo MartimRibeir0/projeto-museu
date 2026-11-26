@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val hasUnity = findProject(":unityLibrary") != null  // ver settings.gradle.kts
+
 android {
     namespace = "pt.ipleiria.museuvirtual"
     compileSdk {
@@ -15,6 +17,7 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("boolean", "HAS_UNITY", hasUnity.toString())
     }
 
     compileOptions {
@@ -23,6 +26,10 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    packaging {
+        jniLibs.useLegacyPackaging = hasUnity  // o Unity pede as .so extraídas (extractNativeLibs no seu manifesto)
     }
 }
 
@@ -35,4 +42,5 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    if (hasUnity) implementation(project(":unityLibrary"))
 }

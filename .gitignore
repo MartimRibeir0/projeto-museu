@@ -25,6 +25,7 @@ museum-unity/[Bb]uild/
 museum-unity/[Bb]uilds/
 museum-unity/[Ll]ogs/
 museum-unity/[Uu]ser[Ss]ettings/
+museum-unity/.utmp/
 
 # Blender
 *.blend1
