@@ -11,7 +11,9 @@ Museu em blockout (RVA, T024–T029), gerado por script para ser reproduzível.
 | `export/corridor_module.fbx` | Módulo de corredor de 4 m com 2 slots de quadro (expansão modular) |
 | `export/frame_{landscape,portrait,square}.fbx` | Molduras; a fotografia é o filho `Photo_*` (UV 0..1) |
 
-Renders: `docs/blender/planta.jpg` (planta) e `docs/blender/blockout.jpg` (vista à entrada).
+Renders: `docs/blender/planta.jpg` (planta, corte a 2,6 m), `docs/blender/blockout.jpg` (vista à entrada) e `docs/blender/gemeo.jpg` (sala do gémeo).
+
+Detalhes: rodapés, aro da porta, sinalética em relevo, receção, banco, plantas, luzes de teto, passadeira, luz e placa por quadro; sala do gémeo com 3 molduras físicas, candeeiro, ventoinha, grelha de ventilação, sensor e terminal. Materiais PBR simples (sem texturas) e UV em todas as meshes.
 
 ## Refazer
 

@@ -1,13 +1,14 @@
 # Museu Virtual Pessoal — Checklist (atualizada)
 
-Exportado em 18/11/2026, 16:10:33. Concluídas: 16/154 (em curso: 6). Última atualização: 18/11/2026.
+Exportado em 18/11/2026, 16:10:33. Concluídas: 18/154 (em curso: 7). Última atualização: 18/11/2026.
 PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 > Prioridade P0 = bloqueante; P1 = importante; P2 = extra.
 
 ## Registo de progresso
 
 ### 2026-11-26
-- **Feito:** T024, T025, T026, T027, T028, T029.
+- **Feito:** T024, T025, T026, T027, T028, T029, T030, T031.
+- **Em curso:** T032 (UVs e materiais PBR simples feitos; faltam texturas).
 - **Blender:** controlado pelo addon "MCP for Blender" (porta 9876, só localhost). O museu é gerado por `blender/build_museum.py` (enviado com `blender/send_to_blender.py`), por isso qualquer elemento da equipa o pode refazer. `.blend` e `.fbx` vão para o Git LFS.
 
 ### 2026-11-25
@@ -159,18 +160,21 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Aceitação:** Três proporções verificadas.
   - **Prazo:** 2026-11-29
   - **Feito (2026-11-26):** Três variantes com área interior 1,2×0,9 (horizontal 4:3), 0,9×1,2 (vertical) e 1,0×1,0 (quadrado); propriedade `aspect` em cada uma. Outras proporções: letterbox no Unity. Exports `blender/export/frame_{landscape,portrait,square}.fbx`.
-- [ ] **T030 · RVA · P1** — Blender: criar elementos secundários
+- [x] **T030 · RVA · P1** — Blender: criar elementos secundários
   - **Passos:** Modelar plintos, bancos, sinalética, rodapés e portas só se acrescentarem legibilidade, evitando detalhe excessivo.
   - **Aceitação:** Ambiente reconhecível e leve.
   - **Prazo:** 2026-11-29
-- [ ] **T031 · RVA · P0** — Blender: modelar zona física do gémeo
+  - **Feito (2026-11-26):** Rodapés em todas as salas, aro da porta, lintéis com sinalética em relevo ("Exposições", "Gémeo digital") e título "Museu Virtual" na entrada, balcão de receção, banco, 2 vasos com plantas, luzes de teto (discos na entrada, faixa em cada módulo), passadeira no corredor e, por quadro, luz de quadro e placa de legenda. Detalhes do corredor são filhos do módulo, por isso vão no `corridor_module.fbx`. Total: 91 objetos, ~13 mil vértices (a maior parte é o texto).
+- [x] **T031 · RVA · P0** — Blender: modelar zona física do gémeo
   - **Passos:** Criar área com 2–3 molduras, candeeiro/LED, grelha de ventilação ou ventoinha e terminal de controlo.
   - **Aceitação:** Objetos separados e identificáveis.
   - **Prazo:** 2026-11-29
+  - **Feito (2026-11-26):** Sala 6×6 m com 3 molduras físicas na parede do fundo (vertical, horizontal, quadrada; slots `Twin_PhysicalFrame_1..3`), candeeiro suspenso `Twin_Light` (+ `Twin_Light_Bulb`), ventoinha `Twin_Fan` no pedestal, grelha de ventilação `Twin_VentGrille`, sensor `Twin_Sensor` e terminal de controlo `Twin_Terminal` (+ ecrã). Luz, ventoinha e sensor têm `device_id` do contrato. Render: `docs/blender/gemeo.jpg`.
 - [ ] **T032 · RVA · P0** — Blender: UV unwrap e materiais básicos
   - **Passos:** Criar UVs consistentes, materiais simples PBR com Base Color/Roughness, texturas de baixa resolução e sem nós proprietários essenciais.
   - **Aceitação:** Materiais reproduzíveis no Unity.
   - **Prazo:** 2026-11-29
+  - **Em curso (2026-11-26):** UV em todas as meshes (projeção por face, 1 UV = 1 m; fotografias com UV 0..1) e materiais Principled só com Base Color/Roughness/Metallic/Emission. **Falta:** texturas de baixa resolução (parede, chão) e confirmar no Unity.
 - [ ] **T033 · RVA · P0** — Blender: corrigir transforms e pivôs
   - **Passos:** Aplicar scale/rotation aos objetos exportados; colocar pivot útil para interações; rever normais, faces duplicadas e dimensões.
   - **Aceitação:** Sem modelos invertidos ou desescalados.

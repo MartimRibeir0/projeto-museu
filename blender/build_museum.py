@@ -12,6 +12,7 @@ import math
 from pathlib import Path
 
 import bpy
+from mathutils import Matrix
 
 ROOT = Path(__file__).resolve().parent.parent  # __file__ é injetado por send_to_blender.py
 BLEND = ROOT / "blender" / "museum_master.blend"
@@ -46,16 +47,42 @@ def box(x0, x1, y0, y1, z0, z1):
     return v, f
 
 
-def mesh(name, boxes):
+def cyl(c0, c1, a0, a1, r0, r1=None, n=16, axis="z"):
+    """Cilindro/cone. axis z: centro (x=c0, y=c1), de z=a0 a a1. axis y: centro (x=c0, z=c1), de y=a0 a a1."""
+    r1 = r0 if r1 is None else max(r1, 0.005)
+    ring = [(math.cos(2 * math.pi * i / n), math.sin(2 * math.pi * i / n)) for i in range(n)]
+    v = [(c0 + r0 * c, c1 + r0 * s, a0) for c, s in ring] + [(c0 + r1 * c, c1 + r1 * s, a1) for c, s in ring]
+    f = [(i, (i + 1) % n, n + (i + 1) % n, n + i) for i in range(n)]
+    f += [tuple(range(n - 1, -1, -1)), tuple(range(n, 2 * n))]
+    if axis == "y":  # trocar y<->z espelha a geometria: inverter as faces para as normais ficarem para fora
+        v = [(x, z, y) for x, y, z in v]
+        f = [tuple(reversed(face)) for face in f]
+    return v, f
+
+
+def box_uv(m):
+    """UV por projeção na face dominante, 1 unidade UV = 1 m (texturas repetem à escala real)."""
+    uv = m.uv_layers.new(name="UVMap")
+    for poly in m.polygons:
+        ax = max(range(3), key=lambda i: abs(poly.normal[i]))
+        a, b = [i for i in range(3) if i != ax]
+        for li in poly.loop_indices:
+            co = m.vertices[m.loops[li].vertex_index].co
+            uv.data[li].uv = (co[a], co[b])
+
+
+def mesh(name, parts):
+    """parts: caixas (x0, x1, y0, y1, z0, z1) ou pares (verts, faces) já feitos, p. ex. de cyl()."""
     verts, faces = [], []
-    for b in boxes:
-        v, f = box(*b)
+    for p in parts:
+        v, f = p if len(p) == 2 else box(*p)
         n = len(verts)
         verts += v
         faces += [tuple(i + n for i in face) for face in f]
     m = bpy.data.meshes.new(name)
     m.from_pydata(verts, [], faces)
     m.validate()
+    box_uv(m)
     return m
 
 
@@ -70,12 +97,37 @@ def obj(name, data, coll, loc=(0, 0, 0), mat=None, parent=None):
     return o
 
 
-def material(name, rgb):
+def material(name, rgb, rough=0.7, metal=0.0, emit=0.0):
+    """PBR simples (Base Color/Roughness/Metallic/Emission), sem nós extra: passa tal e qual para o Unity."""
     m = bpy.data.materials.new(name)
     m.use_nodes = True
-    m.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (*rgb, 1)
+    bsdf = m.node_tree.nodes["Principled BSDF"].inputs
+    bsdf["Base Color"].default_value = (*rgb, 1)
+    bsdf["Roughness"].default_value = rough
+    bsdf["Metallic"].default_value = metal
+    if emit:
+        bsdf["Emission Color"].default_value = (*rgb, 1)
+        bsdf["Emission Strength"].default_value = emit
     m.diffuse_color = (*rgb, 1)  # cor usada no viewport/Workbench
+    m.roughness, m.metallic = rough, metal
     return m
+
+
+def sign(name, body, loc, face, coll, mat, size=0.3):
+    """Texto em relevo (mesh, para ir no FBX) numa parede. face: direção para onde o texto olha ('-y', '+x', '-x')."""
+    cu = bpy.data.curves.new(name, "FONT")
+    cu.body, cu.size, cu.align_x, cu.align_y, cu.extrude = body, size, "CENTER", "CENTER", 0.01
+    tmp = bpy.data.objects.new(name, cu)
+    bpy.context.scene.collection.objects.link(tmp)
+    bpy.context.view_layer.update()
+    me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bpy.data.objects.remove(tmp)
+    bpy.data.curves.remove(cu)
+    rot_z = {"-y": 0, "+x": 90, "-x": -90}[face]
+    me.transform(Matrix.Rotation(math.radians(rot_z), 4, "Z") @ Matrix.Rotation(math.radians(90), 4, "X"))
+    me.name = name
+    box_uv(me)
+    return obj(name, me, coll, loc=loc, mat=mat)
 
 
 def wall_x(x, y0, y1, z0=0.0, z1=H):
@@ -169,9 +221,23 @@ def build():
         "ceiling": material("Ceiling", (0.95, 0.95, 0.95)),
         "frame": material("FrameWood", (0.18, 0.12, 0.08)),
         "photo": material("PhotoPlaceholder", (0.55, 0.6, 0.65)),
-        "twin": material("TwinDevice", (0.2, 0.45, 0.7)),
+        "twin": material("TwinDevice", (0.2, 0.45, 0.7), rough=0.4),
         "label": material("Label", (0.8, 0.1, 0.1)),
+        "skirting": material("Skirting", (0.22, 0.22, 0.24), rough=0.5),
+        "runner": material("Runner", (0.42, 0.1, 0.12), rough=0.9),
+        "lamp": material("LampEmit", (1.0, 0.95, 0.82), rough=0.3, emit=4.0),
+        "metal": material("Metal", (0.62, 0.63, 0.65), rough=0.3, metal=1.0),
+        "sign": material("Sign", (0.12, 0.12, 0.13), rough=0.4),
+        "plaque": material("Plaque", (0.93, 0.91, 0.86), rough=0.6),
+        "screen": material("ScreenEmit", (0.25, 0.55, 0.9), rough=0.2, emit=2.0),
+        "pot": material("Pot", (0.62, 0.36, 0.24)),
+        "plant": material("Plant", (0.16, 0.38, 0.17), rough=0.8),
     }
+    sk_h, sk_t = 0.12, 0.02  # rodapé: altura e espessura
+
+    def skirting(name, segs, coll, parent=None, loc=(0, 0, 0)):
+        """Rodapé: segs são retângulos (x0, x1, y0, y1) em planta, já encostados à face interior da parede."""
+        return obj(name, mesh(name, [(*s, 0, sk_h) for s in segs]), coll, loc=loc, mat=mats["skirting"], parent=parent)
     arch, frames, props, twin, notes, tmpl = (cols[k] for k in
                                               ("Architecture", "Frames", "Props", "DigitalTwin", "Annotations", "_Templates"))
 
@@ -186,11 +252,37 @@ def build():
     obj("Hall_Ceiling", mesh("Hall_Ceiling", [(-hx, hx, 0, HALL, H, H + 0.1)]), arch, mat=mats["ceiling"])
     obj("Hall_Walls", mesh("Hall_Walls", [
         *wall_with_gap(0, -hx - T / 2, hx + T / 2, DOOR_W, DOOR_H),
-        *wall_with_gap(HALL, -hx - T / 2, hx + T / 2, MOD_W),
+        *wall_with_gap(HALL, -hx - T / 2, hx + T / 2, MOD_W, H - 0.5),  # lintel marca a entrada nas exposições
         wall_x(-hx, 0, HALL), wall_x(hx, 0, HALL),
     ]), arch, mat=mats["wall"])
-    obj("Props_Bench", mesh("Props_Bench", [(-1.0, 1.0, HALL / 2 - 0.2, HALL / 2 + 0.2, 0, 0.45)]),
-        props, mat=mats["frame"])
+    ix, g = hx - T / 2, MOD_W / 2 + T / 2  # face interior das paredes laterais; fim das paredes do corredor
+    skirting("Hall_Skirting", [
+        (-ix, -DOOR_W / 2 - 0.1, T / 2, T / 2 + sk_t), (DOOR_W / 2 + 0.1, ix, T / 2, T / 2 + sk_t),
+        (-ix, -g, HALL - T / 2 - sk_t, HALL - T / 2), (g, ix, HALL - T / 2 - sk_t, HALL - T / 2),
+        (-ix, -ix + sk_t, T / 2, HALL - T / 2), (ix - sk_t, ix, T / 2, HALL - T / 2),
+    ], arch)
+    d = DOOR_W / 2
+    obj("Hall_DoorFrame", mesh("Hall_DoorFrame", [  # aro da porta, saliente dos dois lados da parede
+        (-d - 0.1, -d, -0.15, 0.15, 0, DOOR_H + 0.1), (d, d + 0.1, -0.15, 0.15, 0, DOOR_H + 0.1),
+        (-d - 0.1, d + 0.1, -0.15, 0.15, DOOR_H, DOOR_H + 0.1),
+    ]), arch, mat=mats["frame"])
+    obj("Hall_CeilingLights", mesh("Hall_CeilingLights", [
+        cyl(x, y, H - 0.04, H, 0.25, n=24) for x in (-2, 2) for y in (2, 6)
+    ]), arch, mat=mats["lamp"])
+    sign("Sign_Title", "Museu Virtual", (-ix + 0.015, HALL / 2, 2.3), "+x", props, mats["sign"], size=0.45)
+    sign("Sign_Exhibitions", "Exposições", (0, HALL - T / 2 - 0.015, H - 0.25), "-y", props, mats["sign"])
+    obj("Props_Bench", mesh("Props_Bench", [
+        (-1.0, 1.0, HALL / 2 - 0.2, HALL / 2 + 0.2, 0.38, 0.45),  # assento
+        (-0.9, -0.8, HALL / 2 - 0.15, HALL / 2 + 0.15, 0, 0.38), (0.8, 0.9, HALL / 2 - 0.15, HALL / 2 + 0.15, 0, 0.38),
+    ]), props, mat=mats["frame"])
+    obj("Props_Reception", mesh("Props_Reception", [
+        (1.8, 3.4, 1.6, 2.1, 0, 1.0), (1.75, 3.45, 1.5, 2.15, 1.0, 1.05),  # balcão + tampo saliente
+    ]), props, mat=mats["frame"])
+    for side, x in (("L", -ix + 0.45), ("R", ix - 0.45)):
+        pot = obj(f"Props_Plant_{side}", mesh(f"Props_Plant_{side}", [cyl(x, HALL - 0.7, 0, 0.45, 0.2, 0.24)]),
+                  props, mat=mats["pot"])
+        obj(f"Props_Plant_{side}_Leaves", mesh(f"Props_Plant_{side}_Leaves", [cyl(x, HALL - 0.7, 0.45, 1.7, 0.32, 0.02, n=8)]),
+            props, mat=mats["plant"], parent=pot)
 
     # Corredor modular: o módulo começa em y=0 local e acaba em y=MOD_L, por isso encaixa sem folgas.
     mx = MOD_W / 2
@@ -210,12 +302,26 @@ def build():
         m = obj(f"CorridorModule_{k + 1:02d}", module_mesh if k == 0 else module_mesh.copy(), arch,
                 loc=(0, HALL + k * MOD_L, 0))
         obj(f"{tag}_Ceiling", ceiling_mesh if k == 0 else ceiling_mesh.copy(), arch, parent=m)
+        # Detalhes do módulo (filhos, para irem no corridor_module.fbx); meshes próprias por causa do FBX.
+        wx = mx - T / 2
+        skirting(f"{tag}_Skirting", [(-wx, -wx + sk_t, 0, MOD_L), (wx - sk_t, wx, 0, MOD_L)], arch, parent=m)
+        obj(f"{tag}_Runner", mesh(f"{tag}_Runner", [(-0.8, 0.8, 0, MOD_L, 0, 0.008)]), arch, mat=mats["runner"], parent=m)
+        obj(f"{tag}_CeilingLight", mesh(f"{tag}_CeilingLight", [(-0.12, 0.12, 0.6, MOD_L - 0.6, H - 0.04, H)]),
+            arch, mat=mats["lamp"], parent=m)
         for side, x, rot in (("L", -mx + T / 2 + FRAME_D / 2, 90), ("R", mx - T / 2 - FRAME_D / 2, -90)):
             slot = obj(f"{tag}_Slot_{side}", None, frames, loc=(x, MOD_L / 2, EYE), parent=m)
             slot.empty_display_type, slot.empty_display_size = "ARROWS", 0.3
             slot.rotation_euler = (0, 0, math.radians(rot))  # -Y da moldura aponta para o centro do corredor
             slot["slot"] = f"{tag}_{side}"
             place_frame(templates[order[(2 * k + (side == "R")) % 3]], slot, frames, tag)
+            # Em coordenadas do slot: X ao longo da parede, -Y para o corredor, parede em y=+FRAME_D/2.
+            w = FRAME_D / 2
+            obj(f"{tag}_PictureLight_{side}", mesh(f"{tag}_PictureLight_{side}", [
+                (-0.3, 0.3, -0.16, -0.1, 0.78, 0.83),  # barra de luz
+                (-0.2, -0.17, -0.1, w, 0.8, 0.82), (0.17, 0.2, -0.1, w, 0.8, 0.82),  # braços até à parede
+            ]), frames, mat=mats["metal"], parent=slot)
+            obj(f"{tag}_Plaque_{side}", mesh(f"{tag}_Plaque_{side}", [(0.78, 1.0, w - 0.012, w, -0.4, -0.26)]),
+                frames, mat=mats["plaque"], parent=slot)
 
     # Sala do gémeo digital: estado da exposição física (luz, ventoinha, sensor, moldura real).
     y0 = HALL + N_MODULES * MOD_L
@@ -223,30 +329,59 @@ def build():
     obj("Twin_Floor", mesh("Twin_Floor", [(-tx, tx, y0, y0 + TWIN, -0.1, 0)]), arch, mat=mats["floor"])
     obj("Twin_Ceiling", mesh("Twin_Ceiling", [(-tx, tx, y0, y0 + TWIN, H, H + 0.1)]), arch, mat=mats["ceiling"])
     obj("Twin_Walls", mesh("Twin_Walls", [
-        *wall_with_gap(y0, -tx - T / 2, tx + T / 2, MOD_W),
+        *wall_with_gap(y0, -tx - T / 2, tx + T / 2, MOD_W, H - 0.5),
         wall_y(y0 + TWIN, -tx - T / 2, tx + T / 2),
         wall_x(-tx, y0, y0 + TWIN), wall_x(tx, y0, y0 + TWIN),
     ]), arch, mat=mats["wall"])
+    iw, back = tx - T / 2, y0 + TWIN - T / 2  # faces interiores: paredes laterais e parede do fundo
+    skirting("Twin_Skirting", [
+        (-iw, -g, y0 + T / 2, y0 + T / 2 + sk_t), (g, iw, y0 + T / 2, y0 + T / 2 + sk_t),
+        (-iw, iw, back - sk_t, back),
+        (-iw, -iw + sk_t, y0 + T / 2, back), (iw - sk_t, iw, y0 + T / 2, back),
+    ], arch)
+    sign("Sign_Twin", "Gémeo digital", (0, y0 - T / 2 - 0.015, H - 0.25), "-y", props, mats["sign"])
     cy = y0 + TWIN / 2
     obj("Twin_Pedestal", mesh("Twin_Pedestal", [(-0.3, 0.3, cy - 0.3, cy + 0.3, 0, 1.0)]), twin, mat=mats["wall"])
+    # Objetos separados e com nome fixo: o Unity liga cada um ao dispositivo pelo nome ou pelo device_id.
     devices = {
-        "Twin_Light": [(-0.3, 0.3, cy - 0.3, cy + 0.3, H - 0.1, H)],
-        "Twin_Fan": [(-0.15, 0.15, cy - 0.15, cy + 0.15, 1.0, 1.3)],
-        "Twin_Sensor": [(tx - T / 2 - 0.05, tx - T / 2, cy - 0.06, cy + 0.06, 1.4, 1.52)],
+        "Twin_Light": [cyl(0, cy, H - 0.45, H, 0.015),                       # haste
+                       cyl(0, cy, H - 0.65, H - 0.45, 0.28, 0.08, n=24)],     # abajur
+        "Twin_Fan": [cyl(0, cy, 1.0, 1.04, 0.12, n=24),                       # base no pedestal
+                     cyl(0, cy, 1.04, 1.32, 0.02),                            # coluna
+                     cyl(0, 1.45, cy - 0.04, cy + 0.04, 0.17, n=24, axis="y"),  # grelha, virada para a entrada
+                     cyl(0, 1.45, cy - 0.07, cy - 0.04, 0.04, axis="y")],     # cubo
+        "Twin_Sensor": [(iw - 0.05, iw, cy + 1.5, cy + 1.62, 1.4, 1.52)],
     }
-    for name, boxes in devices.items():
-        o = obj(name, mesh(name, boxes), twin, mat=mats["twin"])
+    for name, parts in devices.items():
+        o = obj(name, mesh(name, parts), twin, mat=mats["twin"])
         o["device_id"] = DEVICES[name]
-    phys = obj("Twin_PhysicalFrame_Slot", None, twin, loc=(0, y0 + TWIN - T / 2 - FRAME_D / 2, EYE))
-    phys.empty_display_type = "ARROWS"
-    place_frame(templates["Landscape"], phys, twin, "Twin")
+    obj("Twin_Light_Bulb", mesh("Twin_Light_Bulb", [cyl(0, cy, H - 0.67, H - 0.65, 0.22, n=24)]),
+        twin, mat=mats["lamp"], parent=bpy.data.objects["Twin_Light"])
+    obj("Twin_VentGrille", mesh("Twin_VentGrille", [
+        (iw - 0.03, iw, cy - 0.45, cy + 0.45, 2.3, 2.34), (iw - 0.03, iw, cy - 0.45, cy + 0.45, 2.76, 2.8),
+        (iw - 0.03, iw, cy - 0.45, cy - 0.41, 2.34, 2.76), (iw - 0.03, iw, cy + 0.41, cy + 0.45, 2.34, 2.76),
+        *[(iw - 0.05, iw, cy - 0.41, cy + 0.41, z, z + 0.02) for z in (2.38, 2.46, 2.54, 2.62, 2.7)],  # lâminas
+    ]), twin, mat=mats["metal"])
+    tyy = y0 + 1.3  # terminal de controlo à entrada da sala, virado para quem entra
+    terminal = obj("Twin_Terminal", mesh("Twin_Terminal", [
+        (-2.45, -1.95, tyy - 0.2, tyy + 0.2, 0, 0.04),        # base
+        (-2.23, -2.17, tyy - 0.03, tyy + 0.03, 0.04, 1.0),    # coluna
+        (-2.5, -1.9, tyy - 0.04, tyy + 0.04, 1.0, 1.4),       # caixa do ecrã
+    ]), twin, mat=mats["metal"])
+    obj("Twin_Terminal_Screen", mesh("Twin_Terminal_Screen", [(-2.46, -1.94, tyy - 0.05, tyy - 0.04, 1.04, 1.36)]),
+        twin, mat=mats["screen"], parent=terminal)
+    # Três molduras da exposição física na parede do fundo.
+    for i, (variant, x) in enumerate((("Portrait", -1.9), ("Landscape", 0.0), ("Square", 1.9)), 1):
+        phys = obj(f"Twin_PhysicalFrame_{i}", None, twin, loc=(x, back - FRAME_D / 2, EYE))
+        phys.empty_display_type = "ARROWS"
+        place_frame(templates[variant], phys, twin, f"Twin{i}")
 
     # Anotações: só para a planta e para validar a escala; não vão para o FBX.
     text("Entrada", (0, HALL / 2 + 1.5), notes, mats["label"])
     text("Corredor modular", (0, HALL + N_MODULES * MOD_L / 2), notes, mats["label"])
     text("Gémeo digital", (1.8, y0 + TWIN / 2), notes, mats["label"])
     obj("Visitor_1m75", mesh("Visitor_1m75", [(-0.25, 0.25, -0.15, 0.15, 0, 1.75)]), notes,
-        loc=(1.5, 2.0, 0), mat=mats["label"])
+        loc=(-1.5, 2.0, 0), mat=mats["label"])
     return cols, y0 + TWIN
 
 
@@ -309,6 +444,7 @@ def main():
     # Planta: câmara ortográfica de cima, rodada para o percurso ficar na horizontal.
     plan = bpy.data.cameras.new("Plan")
     plan.type, plan.ortho_scale = "ORTHO", length + 1.0
+    plan.clip_start = 30 - 2.6  # corte horizontal a 2,6 m, como numa planta: lintéis e tetos não tapam as passagens
     render(plan, (0, length / 2, 30), (0, 0, math.radians(90)), DOCS / "planta.jpg", (2200, 800),
            hide=lambda o: "Ceiling" in o.name or in_coll(o, "_Templates"))
     # Vista do visitante à entrada, a olhar para o corredor.
@@ -316,6 +452,10 @@ def main():
     view.lens = 18
     render(view, (0, 1.0, EYE), (math.radians(90), 0, 0), DOCS / "blockout.jpg", (1600, 900),
            hide=lambda o: in_coll(o, "Annotations", "_Templates"))
+    twin_view = bpy.data.cameras.new("TwinView")
+    twin_view.lens = 16
+    render(twin_view, (1.2, length - TWIN + 0.6, EYE), (math.radians(90), 0, math.radians(8)), DOCS / "gemeo.jpg",
+           (1600, 900), hide=lambda o: in_coll(o, "Annotations", "_Templates"))
 
     museum = [o for o in bpy.data.objects if not in_coll(o, "Annotations", "_Templates")]
     export(EXPORT / "museum_blockout.fbx", museum)
