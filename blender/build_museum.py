@@ -1,4 +1,4 @@
-"""Gera o museu em blockout (T024–T029) dentro do Blender aberto e grava museum_master.blend + FBX.
+"""Gera o museu em blockout (T024–T035) dentro do Blender aberto e grava museum_master.blend + FBX.
 
 Correr com o Blender aberto e o addon "MCP for Blender" ativo:
     python blender/send_to_blender.py blender/build_museum.py
@@ -9,15 +9,20 @@ Planta (vista de cima, entrada em y=0):
 """
 
 import math
+import re
 from pathlib import Path
 
+import bmesh
 import bpy
-from mathutils import Matrix
+import numpy as np
+from mathutils import Matrix, Vector
 
 ROOT = Path(__file__).resolve().parent.parent  # __file__ é injetado por send_to_blender.py
 BLEND = ROOT / "blender" / "museum_master.blend"
 EXPORT = ROOT / "blender" / "export"
 DOCS = ROOT / "docs" / "blender"
+TEX = EXPORT / "textures"  # PNG ao lado dos FBX: o FBX guarda o caminho relativo "textures/..."
+TEX_PX = 256  # 1 textura = 1 m (UV em metros), baixa resolução para mobile
 
 H = 3.2  # altura das paredes
 T = 0.2  # espessura das paredes
@@ -71,8 +76,19 @@ def box_uv(m):
             uv.data[li].uv = (co[a], co[b])
 
 
-def mesh(name, parts):
-    """parts: caixas (x0, x1, y0, y1, z0, z1) ou pares (verts, faces) já feitos, p. ex. de cyl()."""
+def hidden_face(f):
+    """Face nunca vista: base encostada ao chão (z=0), topo encostado ao teto (z=H), fundo da laje e topo do teto."""
+    z, nz, eps = f.calc_center_median().z, f.normal.z, 1e-4
+    if nz < -0.99:
+        return abs(z) < eps or z < -0.1 + eps
+    if nz > 0.99:
+        return abs(z - H) < eps or z > H + 0.1 - eps
+    return False
+
+
+def mesh(name, parts, cull=True):
+    """parts: caixas (x0, x1, y0, y1, z0, z1) ou pares (verts, faces) já feitos, p. ex. de cyl().
+    cull: apagar faces escondidas (T035). Só faz sentido com z do mundo; desligar em geometria local (molduras)."""
     verts, faces = [], []
     for p in parts:
         v, f = p if len(p) == 2 else box(*p)
@@ -81,6 +97,12 @@ def mesh(name, parts):
         faces += [tuple(i + n for i in face) for face in f]
     m = bpy.data.meshes.new(name)
     m.from_pydata(verts, [], faces)
+    if cull:
+        bm = bmesh.new()
+        bm.from_mesh(m)
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if hidden_face(f)], context="FACES")
+        bm.to_mesh(m)
+        bm.free()
     m.validate()
     box_uv(m)
     return m
@@ -97,12 +119,54 @@ def obj(name, data, coll, loc=(0, 0, 0), mat=None, parent=None):
     return o
 
 
-def material(name, rgb, rough=0.7, metal=0.0, emit=0.0):
-    """PBR simples (Base Color/Roughness/Metallic/Emission), sem nós extra: passa tal e qual para o Unity."""
+def noise(seed, blob):
+    """Ruído gaussiano suave e repetível nas bordas (filtro em frequência), média 0 e desvio 1."""
+    n = TEX_PX
+    f = np.fft.fft2(np.random.default_rng(seed).normal(size=(n, n)))
+    k = np.fft.fftfreq(n)[:, None] ** 2 + np.fft.fftfreq(n)[None, :] ** 2
+    r = np.real(np.fft.ifft2(f * np.exp(-k * (2 * np.pi * blob) ** 2 / 2)))
+    return (r - r.mean()) / r.std()
+
+
+def texture(name, rgb):
+    """Grava rgb (TEX_PX x TEX_PX x 3, sRGB 0..1; linha 0 = v=0) em TEX/<name>.png e devolve a imagem."""
+    n = TEX_PX
+    img = bpy.data.images.new(name, n, n)
+    img.pixels.foreach_set(np.dstack([np.clip(rgb, 0, 1), np.ones((n, n))]).astype(np.float32).ravel())
+    img.filepath_raw, img.file_format = str(TEX / f"{name}.png"), "PNG"
+    img.save()
+    return img
+
+
+def plaster_texture():
+    t = 1 + 0.012 * noise(1, 6) + 0.008 * noise(2, 1.5)
+    return texture("T_Wall", np.dstack([0.91 * t, 0.90 * t, 0.86 * t]))
+
+
+def wood_texture():
+    """Soalho: 5 tábuas de 20 cm por metro ao longo de Y (sentido do percurso), juntas escuras e veio."""
+    n = TEX_PX
+    v, u = np.mgrid[0:n, 0:n] / n
+    plank = np.floor(u * 5).astype(int)
+    rng = np.random.default_rng(3)
+    tone, offset = rng.uniform(0.85, 1.1, 5)[plank], rng.uniform(0, 1, 5)[plank]
+    grain = 1 + 0.06 * np.sin(2 * np.pi * (u * 60 + 1.5 * noise(4, 10)))  # 60 ciclos inteiros: repete na borda
+    seam = ((u * 5) % 1 < 0.025) | (((v + offset) % 1) < 0.008)
+    t = np.where(seam, 0.45, tone * grain * (1 + 0.04 * noise(5, 3)))
+    return texture("T_FloorWood", np.dstack([0.60 * t, 0.44 * t, 0.30 * t]))
+
+
+def material(name, rgb, rough=0.7, metal=0.0, emit=0.0, tex=None):
+    """PBR simples (Base Color/Roughness/Metallic/Emission, textura opcional na Base Color): passa para o Unity."""
     m = bpy.data.materials.new(name)
     m.use_nodes = True
-    bsdf = m.node_tree.nodes["Principled BSDF"].inputs
+    nodes = m.node_tree.nodes
+    bsdf = next(n for n in nodes if n.type == "BSDF_PRINCIPLED").inputs
     bsdf["Base Color"].default_value = (*rgb, 1)
+    if tex is not None:
+        node = nodes.new("ShaderNodeTexImage")
+        node.image, node.location = tex, (-400, 200)
+        m.node_tree.links.new(node.outputs["Color"], bsdf["Base Color"])
     bsdf["Roughness"].default_value = rough
     bsdf["Metallic"].default_value = metal
     if emit:
@@ -117,6 +181,7 @@ def sign(name, body, loc, face, coll, mat, size=0.3):
     """Texto em relevo (mesh, para ir no FBX) numa parede. face: direção para onde o texto olha ('-y', '+x', '-x')."""
     cu = bpy.data.curves.new(name, "FONT")
     cu.body, cu.size, cu.align_x, cu.align_y, cu.extrude = body, size, "CENTER", "CENTER", 0.01
+    cu.resolution_u = 3  # curvas das letras: 12 por omissão era a maior parte dos vértices da cena (T035)
     tmp = bpy.data.objects.new(name, cu)
     bpy.context.scene.collection.objects.link(tmp)
     bpy.context.view_layer.update()
@@ -153,7 +218,7 @@ def wall_with_gap(y, x0, x1, gap_w, gap_h=H):
 
 def reset():
     for coll in (bpy.data.objects, bpy.data.meshes, bpy.data.materials, bpy.data.cameras,
-                 bpy.data.lights, bpy.data.curves, bpy.data.collections):
+                 bpy.data.lights, bpy.data.curves, bpy.data.collections, bpy.data.images):
         for item in list(coll):
             coll.remove(item)
     s = bpy.context.scene
@@ -178,7 +243,7 @@ def build_frame_template(name, w, h, coll, mats):
         (-x - b, -x, -d / 2, d / 2, -z, z),              # esquerda
         (x, x + b, -d / 2, d / 2, -z, z),                # direita
         (-x, x, d / 2 - 0.01, d / 2, -z, z),             # fundo
-    ]), coll, mat=mats["frame"])
+    ], cull=False), coll, mat=mats["frame"])
     m = bpy.data.meshes.new(f"Photo_{name}")
     m.from_pydata([(-x, 0, -z), (x, 0, -z), (x, 0, z), (-x, 0, z)], [], [(0, 1, 2, 3)])  # normal -Y
     uv = m.uv_layers.new(name="UVMap")
@@ -216,8 +281,8 @@ def text(body, loc, coll, mat, size=0.8):
 def build():
     cols = reset()
     mats = {
-        "wall": material("Wall", (0.85, 0.84, 0.80)),
-        "floor": material("Floor", (0.45, 0.33, 0.22)),
+        "wall": material("Wall", (0.85, 0.84, 0.80), tex=plaster_texture()),
+        "floor": material("Floor", (0.45, 0.33, 0.22), tex=wood_texture()),
         "ceiling": material("Ceiling", (0.95, 0.95, 0.95)),
         "frame": material("FrameWood", (0.18, 0.12, 0.08)),
         "photo": material("PhotoPlaceholder", (0.55, 0.6, 0.65)),
@@ -319,8 +384,8 @@ def build():
             obj(f"{tag}_PictureLight_{side}", mesh(f"{tag}_PictureLight_{side}", [
                 (-0.3, 0.3, -0.16, -0.1, 0.78, 0.83),  # barra de luz
                 (-0.2, -0.17, -0.1, w, 0.8, 0.82), (0.17, 0.2, -0.1, w, 0.8, 0.82),  # braços até à parede
-            ]), frames, mat=mats["metal"], parent=slot)
-            obj(f"{tag}_Plaque_{side}", mesh(f"{tag}_Plaque_{side}", [(0.78, 1.0, w - 0.012, w, -0.4, -0.26)]),
+            ], cull=False), frames, mat=mats["metal"], parent=slot)
+            obj(f"{tag}_Plaque_{side}", mesh(f"{tag}_Plaque_{side}", [(0.78, 1.0, w - 0.012, w, -0.4, -0.26)], cull=False),
                 frames, mat=mats["plaque"], parent=slot)
 
     # Sala do gémeo digital: estado da exposição física (luz, ventoinha, sensor, moldura real).
@@ -347,14 +412,17 @@ def build():
         "Twin_Light": [cyl(0, cy, H - 0.45, H, 0.015),                       # haste
                        cyl(0, cy, H - 0.65, H - 0.45, 0.28, 0.08, n=24)],     # abajur
         "Twin_Fan": [cyl(0, cy, 1.0, 1.04, 0.12, n=24),                       # base no pedestal
-                     cyl(0, cy, 1.04, 1.32, 0.02),                            # coluna
-                     cyl(0, 1.45, cy - 0.04, cy + 0.04, 0.17, n=24, axis="y"),  # grelha, virada para a entrada
-                     cyl(0, 1.45, cy - 0.07, cy - 0.04, 0.04, axis="y")],     # cubo
+                     cyl(0, cy, 1.04, 1.32, 0.02)],                           # coluna
         "Twin_Sensor": [(iw - 0.05, iw, cy + 1.5, cy + 1.62, 1.4, 1.52)],
     }
     for name, parts in devices.items():
         o = obj(name, mesh(name, parts), twin, mat=mats["twin"])
         o["device_id"] = DEVICES[name]
+    # Rotor separado e com pivô no eixo: o Unity roda-o em torno do seu eixo local quando a ventoinha liga.
+    obj("Twin_Fan_Rotor", mesh("Twin_Fan_Rotor", [
+        cyl(0, 1.45, cy - 0.04, cy + 0.04, 0.17, n=24, axis="y"),  # grelha, virada para a entrada
+        cyl(0, 1.45, cy - 0.07, cy - 0.04, 0.04, axis="y"),        # cubo
+    ]), twin, mat=mats["twin"], parent=bpy.data.objects["Twin_Fan"])
     obj("Twin_Light_Bulb", mesh("Twin_Light_Bulb", [cyl(0, cy, H - 0.67, H - 0.65, 0.22, n=24)]),
         twin, mat=mats["lamp"], parent=bpy.data.objects["Twin_Light"])
     obj("Twin_VentGrille", mesh("Twin_VentGrille", [
@@ -382,7 +450,27 @@ def build():
     text("Gémeo digital", (1.8, y0 + TWIN / 2), notes, mats["label"])
     obj("Visitor_1m75", mesh("Visitor_1m75", [(-0.25, 0.25, -0.15, 0.15, 0, 1.75)]), notes,
         loc=(-1.5, 2.0, 0), mat=mats["label"])
+
+    # Pivôs úteis (T033): pousados pela base, candeeiro pelo ponto de fixação no teto, rotor no eixo.
+    for name, where in (("Props_Bench", "base"), ("Props_Reception", "base"), ("Props_Plant_L", "base"),
+                        ("Props_Plant_R", "base"), ("Hall_DoorFrame", "base"), ("Twin_Pedestal", "base"),
+                        ("Twin_Fan_Rotor", "center"), ("Twin_Fan", "base"), ("Twin_Light", "top"),
+                        ("Twin_Sensor", "center"), ("Twin_VentGrille", "center"), ("Twin_Terminal", "base")):
+        set_origin(bpy.data.objects[name], where)
     return cols, y0 + TWIN
+
+
+def set_origin(o, where):
+    """Origem no centro da caixa envolvente (base/top: no fundo/topo) sem mexer no objeto no mundo.
+    Supõe objeto sem rotação/escala (como todos os gerados aqui); os filhos são compensados."""
+    co = np.array([v.co for v in o.data.vertices])
+    lo, hi = co.min(axis=0), co.max(axis=0)
+    p = Vector((lo + hi) / 2)
+    p.z = {"base": lo[2], "top": hi[2], "center": p.z}[where]
+    o.data.transform(Matrix.Translation(-p))
+    o.location += p
+    for c in o.children:
+        c.location -= p
 
 
 # ---------- renders e exports ----------
@@ -395,7 +483,7 @@ def render(cam_data, loc, rot, path, res, hide):
     s.camera = cam
     s.render.engine = "BLENDER_WORKBENCH"
     s.display.shading.light = "STUDIO"
-    s.display.shading.color_type = "MATERIAL"
+    s.display.shading.color_type = "TEXTURE"  # textura onde há, cor do material no resto
     s.display.shading.show_cavity = True
     s.render.resolution_x, s.render.resolution_y = res
     s.render.resolution_percentage = 100
@@ -415,8 +503,91 @@ def in_coll(o, *names):
     return any(c.name in names for c in o.users_collection)
 
 
+def check_meshes(objects):
+    """T033: escala/rotação aplicadas e malhas limpas (sem faces degeneradas, duplicadas ou com normais trocadas)."""
+    errors = []
+    for o in objects:
+        if o.type != "MESH":
+            continue
+        if any(abs(s - 1) > 1e-6 for s in o.scale) or any(abs(r) > 1e-6 for r in o.rotation_euler):
+            errors.append(f"{o.name}: transformação não aplicada")
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        if any(f.calc_area() < 1e-8 for f in bm.faces):
+            errors.append(f"{o.name}: face degenerada")
+        keys = [frozenset(tuple(round(c, 5) for c in v.co) for v in f.verts) for f in bm.faces]
+        if len(keys) != len(set(keys)):
+            errors.append(f"{o.name}: faces duplicadas")
+        # Com normais coerentes, as duas faces de uma aresta percorrem-na em sentidos opostos.
+        if any(len(e.link_loops) == 2 and e.link_loops[0].vert == e.link_loops[1].vert for e in bm.edges):
+            errors.append(f"{o.name}: normais incoerentes")
+        bm.free()
+    return errors
+
+
+def world_bbox(o):
+    pts = [o.matrix_world @ Vector(c) for c in o.bound_box]
+    return Vector([min(p[i] for p in pts) for i in range(3)] + [max(p[i] for p in pts) for i in range(3)])
+
+
+def base_name(name):
+    return re.sub(r"\.\d{3}$", "", name)
+
+
+def check_fbx(path, originals):
+    """T034: reimporta o FBX ao lado da cena e compara nomes, hierarquia, posição/tamanho, faces, materiais,
+    texturas e propriedades. Apaga tudo o que importou."""
+    before = {k: set(getattr(bpy.data, k)) for k in ("objects", "meshes", "materials", "images")}
+    vl = bpy.context.view_layer
+    coll = bpy.data.collections.new("_FBXCheck")
+    bpy.context.scene.collection.children.link(coll)
+    active = vl.active_layer_collection
+    vl.active_layer_collection = vl.layer_collection.children[coll.name]
+    errors = []
+    try:
+        bpy.ops.import_scene.fbx(filepath=str(path), use_custom_props=True)
+        vl.update()
+        got = {base_name(o.name): o for o in coll.objects}
+        if len(got) != len(originals):
+            errors.append(f"{path.name}: {len(got)} objetos importados, esperados {len(originals)}")
+        for o in originals:
+            g = got.get(o.name)
+            if g is None:
+                errors.append(f"{path.name}: falta {o.name}")
+                continue
+            if o.parent in originals and (g.parent is None or base_name(g.parent.name) != o.parent.name):
+                errors.append(f"{o.name}: pai errado")
+            for k in ("device_id", "aspect", "slot"):
+                if k in o and g.get(k) != o[k]:
+                    errors.append(f"{o.name}: propriedade {k} perdida")
+            if o.type != "MESH":
+                continue
+            if (world_bbox(g) - world_bbox(o)).length > 1e-3:
+                errors.append(f"{o.name}: posição/escala/eixos diferentes")
+            if len(g.data.polygons) != len(o.data.polygons):
+                errors.append(f"{o.name}: {len(g.data.polygons)} faces, esperadas {len(o.data.polygons)}")
+            want = [m.name for m in o.data.materials]
+            have = [base_name(m.name) for m in g.data.materials if m]
+            if have != want:
+                errors.append(f"{o.name}: materiais {have}, esperados {want}")
+            for m in g.data.materials:
+                src = bpy.data.materials.get(base_name(m.name))
+                needs = src is not None and any(n.type == "TEX_IMAGE" for n in src.node_tree.nodes)
+                if needs and not any(n.type == "TEX_IMAGE" and n.image and n.image.has_data
+                                     for n in m.node_tree.nodes):
+                    errors.append(f"{o.name}: textura de {src.name} não encontrada")
+    finally:
+        vl.active_layer_collection = active
+        for k, old in before.items():
+            data = getattr(bpy.data, k)
+            for item in set(data) - old:
+                data.remove(item)
+        bpy.data.collections.remove(coll)
+    return errors
+
+
 def export(path, objects, zero=None):
-    """Exporta para Unity (Y-up, escala 1 = 1 m). `zero`: objeto raiz posto na origem durante o export."""
+    """Exporta para Unity (Y-up, escala 1 = 1 m) e verifica reimportando. `zero`: raiz posta na origem."""
     saved = zero.location.copy() if zero else None
     if zero:
         zero.location = (0, 0, 0)
@@ -425,11 +596,15 @@ def export(path, objects, zero=None):
         o.select_set(o in objects)
     bpy.ops.export_scene.fbx(
         filepath=str(path), use_selection=True, object_types={"MESH", "EMPTY"},
-        apply_scale_options="FBX_SCALE_ALL", axis_forward="-Z", axis_up="Y", bake_space_transform=True,
-        use_custom_props=True, mesh_smooth_type="FACE", add_leaf_bones=False,
+        # bake_space_transform=True deita as fotografias e roda as molduras dos slots (detetado por check_fbx);
+        # a conversão de eixos faz-se no Unity com "Bake Axis Conversion" no import do modelo.
+        apply_scale_options="FBX_SCALE_ALL", axis_forward="-Z", axis_up="Y", bake_space_transform=False,
+        use_custom_props=True, mesh_smooth_type="FACE", add_leaf_bones=False, path_mode="RELATIVE",
     )
+    errors = check_fbx(path, objects)
     if zero:
         zero.location = saved
+    return errors
 
 
 def tree(root):
@@ -437,7 +612,7 @@ def tree(root):
 
 
 def main():
-    EXPORT.mkdir(parents=True, exist_ok=True)
+    TEX.mkdir(parents=True, exist_ok=True)
     DOCS.mkdir(parents=True, exist_ok=True)
     cols, length = build()
 
@@ -458,16 +633,20 @@ def main():
            (1600, 900), hide=lambda o: in_coll(o, "Annotations", "_Templates"))
 
     museum = [o for o in bpy.data.objects if not in_coll(o, "Annotations", "_Templates")]
-    export(EXPORT / "museum_blockout.fbx", museum)
+    errors = check_meshes(museum)
+    errors += export(EXPORT / "museum_blockout.fbx", museum)
     module = bpy.data.objects["CorridorModule_01"]
-    export(EXPORT / "corridor_module.fbx", tree(module), zero=module)
+    errors += export(EXPORT / "corridor_module.fbx", tree(module), zero=module)
     for name in VARIANTS:
         t = bpy.data.objects[f"Frame_{name}"]
-        export(EXPORT / f"frame_{name.lower()}.fbx", tree(t), zero=t)
+        errors += export(EXPORT / f"frame_{name.lower()}.fbx", tree(t), zero=t)
+    if errors:
+        raise RuntimeError("verificação falhou:\n" + "\n".join(errors))
 
     bpy.ops.wm.save_as_mainfile(filepath=str(BLEND))
-    verts = sum(len(m.vertices) for m in bpy.data.meshes)
-    print(f"ok: {len(bpy.data.objects)} objetos, {len(bpy.data.meshes)} meshes, {verts} vértices; "
+    verts = sum(len(o.data.vertices) for o in museum if o.type == "MESH")
+    tris = sum(len(p.vertices) - 2 for o in museum if o.type == "MESH" for p in o.data.polygons)
+    print(f"ok: {len(museum)} objetos exportados, {verts} vértices, {tris} triângulos; meshes e FBX verificados; "
           f"comprimento {length:.1f} m; gravado {BLEND.name}; FBX em {EXPORT.name}/")
 
 
