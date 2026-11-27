@@ -45,7 +45,7 @@ public class MuseumBuilder : MonoBehaviour
     /// <summary>Sala (ou a sala inicial) com os quadros que lhe cabem; as fotografias vêm e vão com a distância.</summary>
     public class Area
     {
-        public GameObject root;  // null na sala inicial: nunca se esconde
+        public GameObject root;
         public Bounds bounds;
         public readonly List<(Transform slot, Coll c, int photo)> jobs = new();
         public readonly List<Object> hung = new();  // molduras, materiais e texturas criados: tudo a destruir ao sair
@@ -95,20 +95,26 @@ public class MuseumBuilder : MonoBehaviour
                 Keep(rm, "_FarWall_Solid", r == rooms - 1);
                 var area = NewArea(rm, rm.gameObject);
                 var slots = Slots(rm);
-                for (int k = 0; k < RoomSlots && r * RoomSlots + k < c.files.Length; k++)
-                    area.jobs.Add((slots[k], c, r * RoomSlots + k));
+                for (int k = 0; k < RoomSlots; k++)
+                    if (r * RoomSlots + k < c.files.Length) area.jobs.Add((slots[k], c, r * RoomSlots + k));
+                    else EmptyFrame(slots[k]);  // última sala da coleção: o resto dos quadros fica vazio
                 anchor = Find(rm, "_Anchor_Next");
             }
         }
-        // Sala inicial: amostra das coleções escolhidas, alternando entre elas.
-        var hall = NewArea(lobby, null);
-        var lobbySlots = Slots(lobby);
-        for (int j = 0; j < lobbySlots.Count && cols.Count > 0; j++)
-        {
-            var c = cols[j % cols.Count];
-            if (j / cols.Count < c.files.Length) hall.jobs.Add((lobbySlots[j], c, j / cols.Count));
-        }
+        foreach (var slot in Slots(lobby)) EmptyFrame(slot);  // sala inicial: quadros vazios
         Physics.SyncTransforms();
+    }
+
+    /// <summary>Moldura-molde sem fotografia (tela cinzenta do Blender). Fica sempre: é leve e partilha malha e material.</summary>
+    void EmptyFrame(Transform slot)
+    {
+        var f = Instantiate(frame, slot);
+        Place(f.transform, slot.TransformPoint(framePos), slot.rotation * frameRot);
+        f.GetComponentsInChildren<MeshRenderer>().First(r => r.name.StartsWith("Frame_")).gameObject.AddComponent<BoxCollider>();
+        var info = f.GetComponent<FrameInfo>();
+        info.title = "Moldura vazia";
+        info.category = "";
+        info.description = "Ainda sem fotografia.";
     }
 
     Area NewArea(Transform t, GameObject root)
@@ -131,7 +137,7 @@ public class MuseumBuilder : MonoBehaviour
         for (int rank = 0; rank < byDist.Count; rank++)
         {
             var (a, d) = byDist[rank];
-            if (a.root != null && a.root.activeSelf != d < HideM) a.root.SetActive(d < HideM);
+            if (a.root.activeSelf != d < HideM) a.root.SetActive(d < HideM);
             if (a.loaded && (d > UnloadM || rank >= MaxKept)) Unload(a);
             else if (!a.loaded && next == null && d < LoadM && rank < MaxLoaded) next = a;
         }
@@ -167,24 +173,36 @@ public class MuseumBuilder : MonoBehaviour
         area.loaded = false;
     }
 
-    // Moldura à medida da fotografia (T039): proteções para tamanhos esquisitos.
+    // Molduras de formatos fixos (T039): cada fotografia vai para a de proporção mais parecida e corta-se ao centro
+    // o pouco que sobra. Assim a parede fica com tamanhos "de galeria" em vez de um tamanho diferente por fotografia.
+    // Larguras escolhidas para ~1 m² cada (igual à moldura quadrada do Blender), sempre dentro de MaxW x MaxH.
     const float MaxW = 1.4f, MaxH = 1.3f;  // área da fotografia: não toca na luz do quadro (+0,78 m) nem na placa (x 0,78 m)
-    const float PhotoArea = 1.0f;          // m², igual à moldura quadrada do Blender: fotografias com o mesmo peso na parede
-    const float MaxAspect = 3f;            // panoramas e tiras: o excesso corta-se ao centro, senão ficava uma risca
     const int LowResPx = 600, MinPx = 16;  // abaixo de LowResPx a moldura encolhe (até 55%) para não se ver o pixel
     const int MaxBytes = 20 << 20;         // ficheiros maiores não se descodificam (memória do telemóvel)
 
-    /// <summary>Proporção mostrada e tamanho da fotografia na parede (m) para uma imagem de pw x ph píxeis.</summary>
-    public static (float shown, float w, float h) FrameSize(int pw, int ph)
+    public static readonly (string name, float aspect, float w)[] Formats =
     {
-        float a = pw / (float)ph, shown = Mathf.Clamp(a, 1f / MaxAspect, MaxAspect);
+        ("Quadrada", 1f, 1f),
+        ("Horizontal 4:3", 4f / 3f, 1.2f),
+        ("Horizontal 3:2", 1.5f, 1.26f),
+        ("Horizontal 16:9", 16f / 9f, 1.4f),
+        ("Panorâmica 2:1", 2f, 1.4f),
+        ("Vertical 3:4", 3f / 4f, 0.9f),
+        ("Vertical 2:3", 2f / 3f, 0.84f),
+        ("Vertical 9:16", 9f / 16f, 0.73125f),
+        ("Vertical 1:2", 0.5f, 0.65f),
+    };
+
+    /// <summary>Moldura para uma imagem de pw x ph píxeis: nome, proporção mostrada e tamanho da fotografia na parede (m).</summary>
+    public static (string name, float shown, float w, float h) FrameSize(int pw, int ph)
+    {
+        float a = Mathf.Log(pw / (float)ph);
+        var f = Formats.OrderBy(x => Mathf.Abs(Mathf.Log(x.aspect) - a)).First();  // mais parecida em proporção (log: 2:1 e 1:2 contam igual)
         float k = Mathf.Clamp(Mathf.Max(pw, ph) / (float)LowResPx, 0.55f, 1f);
-        float w = Mathf.Sqrt(PhotoArea * shown) * k, h = w / shown;
-        float s = Mathf.Min(1f, MaxW / w, MaxH / h);
-        return (shown, w * s, h * s);
+        return (f.name, f.aspect, f.w * k, f.w / f.aspect * k);
     }
 
-    /// <summary>Pendura a fotografia numa moldura feita à medida (corte ao centro só acima de 3:1).</summary>
+    /// <summary>Pendura a fotografia na moldura de formato mais parecido (o molde esticado a esse tamanho).</summary>
     public void Hang(Area area, Transform slot, Coll c, int photo, byte[] bytes)
     {
         string file = $"{c.id}/{c.files[photo]}";
@@ -197,7 +215,7 @@ public class MuseumBuilder : MonoBehaviour
             return;
         }
         float a = src.width / (float)src.height;
-        var (shown, w, h) = FrameSize(src.width, src.height);
+        var (format, shown, w, h) = FrameSize(src.width, src.height);
         var tex = Shrink(src);
         Kill(src);
 
@@ -225,9 +243,9 @@ public class MuseumBuilder : MonoBehaviour
 
         var info = f.GetComponent<FrameInfo>();
         info.title = $"{c.title} — {photo + 1} de {c.files.Length}";
-        info.category = a > 1.05f ? "Horizontal" : a < 0.95f ? "Vertical" : "Quadrada";
+        info.category = $"Moldura {format}";
         info.description = $"{c.files[photo]}, {c.title}. Original {Mathf.RoundToInt(a * 100) / 100f}:1"
-                           + (a == shown ? "." : ", cortada ao centro para caber.");
+                           + (Mathf.Abs(a / shown - 1) < 0.02f ? "." : ", cortada ao centro para caber na moldura.");
     }
 
     /// <summary>

@@ -312,9 +312,12 @@ public static class MuseumSetup
         foreach (var area in builder.areas)  // tudo carregado, só para as imagens; no telemóvel carrega-se à volta do visitante
             for (var run = builder.Load(area); run.MoveNext();) { }
         Physics.SyncTransforms();
-        int photos = Object.FindObjectsByType<FrameInfo>(FindObjectsSortMode.None).Count(f => !string.IsNullOrEmpty(f.title));
-        int expected = cols.Sum(c => c.files.Length)  // salas + 6 quadros da sala inicial, alternando coleções
-            + (cols.Count == 0 ? 0 : Enumerable.Range(0, 6).Count(j => j / cols.Count < cols[j % cols.Count].files.Length));
+        int photos = Object.FindObjectsByType<FrameInfo>(FindObjectsSortMode.None).Count(f => !string.IsNullOrEmpty(f.title) && f.title != "Moldura vazia");
+        int expected = cols.Sum(c => c.files.Length);
+        // Vazios: os 6 da sala inicial e o resto da última sala de cada coleção (25 fotografias -> 5 vazios).
+        int empty = Object.FindObjectsByType<FrameInfo>(FindObjectsSortMode.None).Count(f => f.title == "Moldura vazia");
+        int expectedEmpty = 6 + cols.Sum(c => (RoomSlotsFor(c) - c.files.Length));
+        if (empty != expectedEmpty) throw new System.Exception($"{empty} molduras vazias, esperadas {expectedEmpty}");
         if (cols.Count > 0 && photos == 0) throw new System.Exception("nenhuma fotografia nos quadros");
 
         string dir = Path.Combine(Repo, "docs", "unity");
@@ -322,6 +325,9 @@ public static class MuseumSetup
         foreach (var old in new[] { "gemeo.png" }) File.Delete(Path.Combine(dir, old));
         var cam = player.GetComponentInChildren<Camera>();
         Shot(cam, Path.Combine(dir, "entrada.png"));
+        cam.transform.Rotate(0f, 180f, 0f, Space.World);  // sala inicial vista para trás: secretária e quadros vazios
+        Shot(cam, Path.Combine(dir, "sala_inicial.png"));
+        cam.transform.Rotate(0f, 180f, 0f, Space.World);
 
         var tmp = new GameObject("SnapshotCam").AddComponent<Camera>();
         tmp.CopyFrom(cam);
@@ -335,6 +341,14 @@ public static class MuseumSetup
             tmp.transform.position = new Vector3(r.position.x, Eye, r.position.z) + inward * 0.4f;
             tmp.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(center - tmp.transform.position, Vector3.up));
             Shot(tmp, Path.Combine(dir, "sala.png"));
+
+            // Última sala da última coleção (p. ex. 25 fotografias: 5 com fotografia, 5 vazias).
+            var last = rooms[^1];
+            var lc = last.GetComponent<Renderer>().bounds.center;
+            var lin = Vector3.ProjectOnPlane(lc - last.position, Vector3.up).normalized;
+            tmp.transform.position = new Vector3(last.position.x, Eye, last.position.z) + lin * 0.4f;
+            tmp.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(lc - tmp.transform.position, Vector3.up));
+            Shot(tmp, Path.Combine(dir, "ultima_sala.png"));
 
             // Painel aberto num quadro da sala, visto de 1,6 m (verifica T039 sem telemóvel).
             var frame = r.parent.GetComponentsInChildren<FrameInfo>().First();
@@ -365,12 +379,15 @@ public static class MuseumSetup
 
         var vr = player.GetComponent<VrMode>();
         Shot(Path.Combine(dir, "rv.png"), vr.left, vr.right);
-        Debug.Log($"[MuseumSetup] {cols.Count} coleções, {photos} quadros com fotografia (esperados {expected})");
+        Debug.Log($"[MuseumSetup] {cols.Count} coleções, {photos} quadros com fotografia (esperados {expected}), {empty} vazios");
         if (photos != expected) throw new System.Exception($"{photos} quadros com fotografia, esperados {expected}");
         CheckStreaming(builder);
         CheckFrameSizes();
         return photos;
     }
+
+    static int RoomSlotsFor(MuseumBuilder.Coll c) =>
+        Mathf.Max(1, Mathf.CeilToInt(c.files.Length / (float)MuseumBuilder.RoomSlots)) * MuseumBuilder.RoomSlots;
 
     /// <summary>Imagem de teste w x h: gradiente com borda branca (vê-se se foi cortada).</summary>
     static byte[] Png(int w, int h)
@@ -388,23 +405,27 @@ public static class MuseumSetup
         return png;
     }
 
-    /// <summary>Contas da moldura à medida: proporção mantida até 3:1, sempre dentro de 1,4 x 1,3 m, baixa resolução mais pequena.</summary>
+    /// <summary>Escolha da moldura: formato mais parecido, sempre dentro de 1,4 x 1,3 m, baixa resolução mais pequena.</summary>
     static void CheckFrameSizes()
     {
-        void Is(string what, (float shown, float w, float h) got, float shown, float w, float h)
+        void Is(string what, (string name, float shown, float w, float h) got, string name, float w, float h)
         {
-            if (Mathf.Abs(got.shown - shown) > 0.01f || Mathf.Abs(got.w - w) > 0.01f || Mathf.Abs(got.h - h) > 0.01f)
-                throw new System.Exception($"moldura {what}: {got}, esperado ({shown}, {w}, {h})");
+            if (got.name != name || Mathf.Abs(got.w - w) > 0.01f || Mathf.Abs(got.h - h) > 0.01f)
+                throw new System.Exception($"moldura {what}: {got}, esperado ({name}, {w}, {h})");
         }
-        Is("4:3", MuseumBuilder.FrameSize(4000, 3000), 1.333f, 1.155f, 0.866f);
-        Is("panorama 10:1", MuseumBuilder.FrameSize(10000, 1000), 3f, 1.4f, 0.467f);
-        Is("tira 1:3", MuseumBuilder.FrameSize(300, 900), 0.333f, 0.433f, 1.3f);
-        Is("64 px", MuseumBuilder.FrameSize(64, 64), 1f, 0.55f, 0.55f);
-        Is("1:1", MuseumBuilder.FrameSize(2000, 2000), 1f, 1f, 1f);
+        Is("4:3", MuseumBuilder.FrameSize(4000, 3000), "Horizontal 4:3", 1.2f, 0.9f);
+        Is("16:9", MuseumBuilder.FrameSize(1920, 1080), "Horizontal 16:9", 1.4f, 0.7875f);
+        Is("9:16", MuseumBuilder.FrameSize(1080, 1920), "Vertical 9:16", 0.731f, 1.3f);
+        Is("3:4", MuseumBuilder.FrameSize(3000, 4000), "Vertical 3:4", 0.9f, 1.2f);
+        Is("panorama 10:1", MuseumBuilder.FrameSize(10000, 1000), "Panorâmica 2:1", 1.4f, 0.7f);
+        Is("tira 1:3", MuseumBuilder.FrameSize(300, 900), "Vertical 1:2", 0.65f, 1.3f);
+        Is("64 px", MuseumBuilder.FrameSize(64, 64), "Quadrada", 0.55f, 0.55f);
+        Is("1:1", MuseumBuilder.FrameSize(2000, 2000), "Quadrada", 1f, 1f);
+        Is("quase quadrada", MuseumBuilder.FrameSize(1100, 1000), "Quadrada", 1f, 1f);
         for (int w = 1; w <= 8000; w += 97)
             for (int h = 1; h <= 8000; h += 89)
             {
-                var (_, fw, fh) = MuseumBuilder.FrameSize(w, h);
+                var (_, _, fw, fh) = MuseumBuilder.FrameSize(w, h);
                 if (fw > 1.4001f || fh > 1.3001f || fw < 0.1f || fh < 0.1f) throw new System.Exception($"moldura {w}x{h}: {fw}x{fh} m");
             }
     }

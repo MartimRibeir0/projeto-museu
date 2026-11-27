@@ -1,10 +1,16 @@
 # Museu Virtual Pessoal — Checklist (atualizada)
 
-Exportado em 18/11/2026, 16:10:33. Concluídas: 27/154. Última atualização: 26/11/2026 (noite).
+Exportado em 18/11/2026, 16:10:33. Concluídas: 34/154. Última atualização: 27/11/2026.
 PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
 > Prioridade P0 = bloqueante; P1 = importante; P2 = extra.
 
 ## Registo de progresso
+
+### 2026-11-27
+- **Feito:** T038, T039 (testados no Samsung A55), T041, T042, T043, T044, T045 (app Android: navegação, coleção, seleção múltipla, ficha e camada de dados com dados fictícios; testado no emulador Pixel_8, 9 testes unitários a passar).
+- **Unity:** toque com dois dedos (andar + olhar ao mesmo tempo, T038) e molduras de formato fixo (T039). APK com tudo em `MuseuVirtual.apk`.
+- **App:** ecrã "Museu 3D" com cartões de coleção, "Selecionar todas", resumo de salas/fotografias e ajuda dos comandos.
+- **Atalho:** dados da app só em memória (perdem-se ao fechar) até haver cliente HTTP e cache (T046/T047).
 
 ### 2026-11-26
 - **Feito:** T024, T025, T026, T027, T028, T029, T030, T031, T032, T033, T034, T035 (parte Blender toda feita; import no Unity e FPS no Android ficam em T036/T038).
@@ -211,41 +217,49 @@ PODES FUGIR AO DESIGN FEITO PELO FIGMA, NAO TEM DE SER IGUAL
   - **Aceitação:** Museu legível e sem custo excessivo.
   - **Prazo:** 2026-11-29
   - **Feito (2026-11-26):** Luz cozinhada (1 ponto por divisão, lightmap 8 texels/m, 1 mapa 1024, não direcional) + ambiente trilight; só a luz do candeeiro do gémeo (`Twin_Light_Source`) é em tempo real, para seguir o estado do dispositivo. Tudo estático exceto os dispositivos do gémeo. Câmara na 1.ª pessoa a 1,6 m, FOV 60°, sem pós-processamento (custo). Imagem no telemóvel valida-se com T038.
-- [ ] **T038 · RVA · P0** — Unity: implementar navegação 3D mobile
+- [x] **T038 · RVA · P0** — Unity: implementar navegação 3D mobile
   - **Passos:** Implementar movimento e rotação por joystick/touch, limites, colisões e botão de sair/voltar à coleção.
   - **Aceitação:** Percorrer corredor e abrir quadro num telemóvel.
   - **Prazo:** 2026-11-29
   - **Nota (vinda de T035):** ao testar no telemóvel, medir FPS da cena inicial (~5,2 mil vértices).
   - **Em curso (2026-11-26):** `FirstPersonTouch.cs`: metade esquerda do ecrã = joystick virtual, metade direita = olhar; WASD + botão direito no Editor; `CharacterController` contra colliders. O setup verifica que o visitante nasce no chão e não atravessa paredes. Botão "Voltar" e recuar do Android regressam à app (`BackToApp.cs`, T014). Velocidade 3 m/s (2,2 m/s em RV). Já a navegar no Samsung A55. **Falta:** confirmar abrir quadro no telemóvel (T039) e medir FPS.
-- [ ] **T039 · RVA · P0** — Unity: criar hotspot e painel de fotografia
+  - **Atualização (2026-11-27):** `FirstPersonTouch.cs` passa a ler os toques pelo Input System (`Touchscreen`): na `UnityPlayerGameActivity` o `Input.touches` antigo só garantia um dedo e não dava para andar e olhar ao mesmo tempo. Joystick visível onde o dedo toca e ajuda dos gestos nos primeiros 6 s; dedos que começam nos botões não contam. **Feito:** testado no Samsung A55, andar e olhar ao mesmo tempo a funcionar.
+- [x] **T039 · RVA · P0** — Unity: criar hotspot e painel de fotografia
   - **Passos:** Raycast/tap para selecionar moldura, apresentar título/descrição/categoria e fechar detalhe.
   - **Aceitação:** Quadro demonstrativo clicável.
   - **Prazo:** 2026-11-29
   - **Em curso (2026-11-26):** `MuseumInteraction.cs` + `PhotoPanel.cs` + `FrameInfo.cs`: toque curto no quadro (ou A no comando; em RV, olhar + toque/A) abre um painel 3D (funciona nos dois olhos) com título, forma e descrição; fecha com toque, A, B ou ao afastar-se 2,5 m. Dados por agora de demonstração (slot e forma da moldura) até haver API (T059/T062). Visto no render `docs/unity/quadro.png`. **Falta:** testar no telemóvel.
+  - **Atualização (2026-11-27):** Molduras de formato fixo em vez de esticadas à medida: quadrada, horizontal 4:3/3:2/16:9, panorâmica 2:1, vertical 3:4/2:3/9:16/1:2 (~1 m² cada, máx. 1,4 × 1,3 m); cada fotografia vai para a de proporção mais parecida e o resto corta-se ao centro (`MuseumBuilder.FrameSize`, verificado em `MuseumSetup.CheckFrameSizes`). O painel mostra a moldura usada.
+  - **Feito (2026-11-27):** testado no Samsung A55: abrir quadro e molduras por formato a funcionar.
 - [ ] **T040 · RVA · P1** — Unity: estruturar cenas e pacotes
   - **Passos:** Separar bootstrap, museu, zona XR e assets; organizar pastas Scenes/Prefabs/Materials/Scripts/StreamingAssets.
   - **Aceitação:** Projeto Unity fácil de integrar.
   - **Prazo:** 2026-11-29
-- [ ] **T041 · DDM · P0** — Implementar navegação Jetpack Compose
+- [x] **T041 · DDM · P0** — Implementar navegação Jetpack Compose
   - **Passos:** Adicionar Navigation Compose, rotas e ViewModels para ecrãs principais; centralizar estado da sessão.
   - **Aceitação:** Navegação sem falhas de regresso.
   - **Prazo:** 2026-11-29
-- [ ] **T042 · DDM · P0** — Criar UI Material 3 e estados
+  - **Feito (2026-11-27):** Navigation Compose 2.9.3 com rotas `colecao`, `nova`, `museu` e `ficha/{id}` (`ui/MuseuApp.kt`); separadores guardam e repõem o estado; recuar a partir da ficha volta à coleção (não à escolha já feita). Um só `PhotosViewModel` para a app (estado da sessão), criado em `MuseuApp`. Testado no emulador Pixel_8: Coleção → Nova fotografia → ficha → seguinte → Coleção sem falhas. Ainda sem ecrãs Início/Definições/Controlo (T016).
+- [x] **T042 · DDM · P0** — Criar UI Material 3 e estados
   - **Passos:** Construir ecrãs iniciais com componentes comuns, loaders, erros e ecrãs vazios.
   - **Aceitação:** Fluxo completo com mocks.
   - **Prazo:** 2026-11-29
-- [ ] **T043 · DDM · P0** — Implementar seleção múltipla de fotografias
+  - **Feito (2026-11-27):** Estado comum `UiState` (a carregar / erro / vazio / conteúdo) em `ui/PhotosViewModel.kt`; Coleção em grelha com fichas e "Sem ficha", ecrã vazio com ação (`EmptyState`), Museu 3D com cartões de coleção. Fluxo completo com dados fictícios (`FakePhotoRepository`). Capturas em `docs/evidencias/2026-11-27-colecao.png`.
+- [x] **T043 · DDM · P0** — Implementar seleção múltipla de fotografias
   - **Passos:** Photo Picker múltiplo com validação MIME/tamanho e pré-visualização; gerir URIs e limites de permissões.
   - **Aceitação:** Seleção de várias imagens com prévia.
   - **Prazo:** 2026-11-29
-- [ ] **T044 · DDM · P0** — Criar formulário de ficha
+  - **Feito (2026-11-27):** `PickMultipleVisualMedia` (até 20) em `ui/NewPhotoScreen.kt`: valida tipo (JPEG/PNG/WebP/HEIC) e tamanho (≤ 20 MB, igual ao limite do museu 3D), mostra as recusadas com o motivo e a prévia das aceites; pede permissão persistente do Uri para a miniatura durar até ao upload. Captura em `docs/evidencias/2026-11-27-selecao-multipla.png`.
+- [x] **T044 · DDM · P0** — Criar formulário de ficha
   - **Passos:** Título, descrição/memória, categorias sugeridas/editáveis, exposição e validação; distinguir rótulo IA de escolha humana.
   - **Aceitação:** Ficha editável e validada.
   - **Prazo:** 2026-11-29
-- [ ] **T045 · DDM · P0** — Criar Repository e modelos DTO
+  - **Feito (2026-11-27):** `ui/EditPhotoScreen.kt`: título (obrigatório, ≤ 200), descrição, memória, categorias (até 10, ≤ 50 car.) e exposições; regras em `domain/CardRules`, iguais às do backend. Rótulos da IA aparecem como "Nome · IA 87%" e têm de ser confirmados antes de guardar; os escritos pela pessoa contam como confirmados. "Guardar" passa à próxima fotografia sem ficha. Apagar com confirmação. Sugestões de categoria por agora fixas (até haver modelo, T050). Captura em `docs/evidencias/2026-11-27-ficha.png`.
+- [x] **T045 · DDM · P0** — Criar Repository e modelos DTO
   - **Passos:** Definir PhotoDto/ExhibitionDto/PredictionDto/DeviceDto, Result/UiState, mapeamentos e separação data/domain/ui.
   - **Aceitação:** Mocks substituíveis por API sem refazer UI.
   - **Prazo:** 2026-11-29
+  - **Feito (2026-11-27):** `data/Dtos.kt` com `PhotoDto`, `LabelDto`, `ExhibitionDto`, `DeviceDto`, `PredictionDto` (campos iguais a `backend/app/schemas.py`) e mapeamentos para `domain/Models.kt`; interface `PhotoRepository` com `FakePhotoRepository` em memória. A UI só fala com a interface: trocar pela API (T046) muda só `AppGraph`. Testes em `app/src/test/.../domain/RulesTest.kt` (validação, ficheiros, exposições ao guardar/apagar).
 - [ ] **T046 · DDM · P0** — Configurar cliente HTTPS
   - **Passos:** Integrar Retrofit/OkHttp ou Ktor Client, timeouts, log em debug, serialização JSON e URL de desenvolvimento configurável.
   - **Aceitação:** Chamada GET de teste ao backend.
