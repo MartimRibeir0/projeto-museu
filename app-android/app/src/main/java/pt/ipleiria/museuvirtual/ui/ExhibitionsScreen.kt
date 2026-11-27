@@ -27,18 +27,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import pt.ipleiria.museuvirtual.BuildConfig
 
 /**
  * Abre o museu 3D do Unity em ecrã inteiro; "Voltar" no Unity fecha-o e regressa aqui (T014).
  * vr = true arranca já em modo RV para óculos tipo Cardboard (lido em VrMode.cs).
  * remoteToken: o do link do telemóvel-comando, para o link partilhado aqui servir sempre (RemotePad.cs).
+ * collections: ids das coleções escolhidas (pastas em assets/colecoes), pela ordem em que o museu as monta.
  */
-fun openMuseum3D(context: Context, vr: Boolean = false) {
+fun openMuseum3D(context: Context, collections: List<String>, vr: Boolean = false) {
     // Por nome: a app compila sem o módulo do Unity (ver settings.gradle.kts).
     context.startActivity(
         Intent().setClassName(context, "com.unity3d.player.UnityPlayerGameActivity")
             .putExtra("vr", vr)
+            .putExtra("collections", collections.toTypedArray())
             .putExtra("remoteToken", RemoteLink.token(context))
     )
 }
@@ -51,7 +71,6 @@ fun shareRemoteLink(context: Context, url: String) {
     context.startActivity(Intent.createChooser(send, "Enviar link do comando"))
 }
 
-// shortcut: só o museu 3D; a lista de exposições vem com a API (T045).
 @Composable
 fun ExhibitionsScreen() {
     val context = LocalContext.current
@@ -72,21 +91,31 @@ fun ExhibitionsScreen() {
     }
     var link by remember { mutableStateOf(RemoteLink.url(context)) }
     var hotspot by remember { mutableStateOf(RemoteLink.isHotspotHost()) }
+    val collections = remember { loadCollections(context.assets) }
+    var chosen by rememberSaveable { mutableStateOf(ArrayList<String>()) }  // ArrayList: guarda-se no Bundle
+    val selected = collections.map { it.id }.filter { it in chosen }
     Column(
-        Modifier.fillMaxSize().padding(24.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("Museu 3D", style = MaterialTheme.typography.headlineSmall)
         Text(
-            if (BuildConfig.HAS_UNITY) "Percorre o museu e a sala do gémeo digital."
+            if (BuildConfig.HAS_UNITY) "Escolhe as coleções que queres ver e entra no museu."
             else "Esta build não inclui o museu 3D (exportar do Unity: museum-unity/README.md).",
             style = MaterialTheme.typography.bodyMedium,
         )
-        Button(onClick = { withLocalNetwork { openMuseum3D(context) } }, enabled = BuildConfig.HAS_UNITY) {
+        collections.forEach { c ->
+            CollectionRow(c, checked = c.id in chosen) { on ->
+                chosen = ArrayList(if (on) chosen + c.id else chosen - c.id)
+            }
+        }
+        if (collections.isEmpty()) Text("Sem coleções na app.", color = MaterialTheme.colorScheme.error)
+        val canOpen = BuildConfig.HAS_UNITY && selected.isNotEmpty()
+        Button(onClick = { withLocalNetwork { openMuseum3D(context, selected) } }, enabled = canOpen) {
             Text("Visitar museu 3D")
         }
-        OutlinedButton(onClick = { withLocalNetwork { openMuseum3D(context, vr = true) } }, enabled = BuildConfig.HAS_UNITY) {
+        OutlinedButton(onClick = { withLocalNetwork { openMuseum3D(context, selected, vr = true) } }, enabled = canOpen) {
             Text("Visitar em RV (óculos)")
         }
 
@@ -119,5 +148,28 @@ fun ExhibitionsScreen() {
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+/** Linha da coleção: caixa de seleção, miniatura da 1.ª fotografia, nome e n.º de fotografias. */
+@Composable
+private fun CollectionRow(c: Collection, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val assets = LocalContext.current.assets
+    val thumb by produceState<ImageBitmap?>(null, c.id) {
+        value = c.photos.firstOrNull()?.let { withContext(Dispatchers.IO) { loadThumbnail(assets, it, 160) } }
+    }
+    Row(
+        Modifier.fillMaxWidth().toggleable(checked, role = Role.Checkbox, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Checkbox(checked, onCheckedChange = null)
+        Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp))) {
+            thumb?.let { Image(it, contentDescription = null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+        }
+        Column {
+            Text(c.title, style = MaterialTheme.typography.titleMedium)
+            Text("${c.photos.size} fotografias", style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

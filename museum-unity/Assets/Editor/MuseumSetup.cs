@@ -16,12 +16,7 @@ public static class MuseumSetup
     const string Models = "Assets/Models/Museum";
     const string Prefabs = "Assets/Prefabs";
     const string ScenePath = "Assets/Scenes/Museum.unity";
-    static readonly string[] Variants = { "Landscape", "Portrait", "Square" };
-    static readonly string[] Colliders = {  // objetos que bloqueiam o visitante
-        "Hall_Walls", "Hall_Floor", "Twin_Walls", "Twin_Floor", "Twin_Pedestal", "Twin_Terminal",
-        "Props_Bench", "Props_Reception", "Props_Plant_L", "Props_Plant_R",
-    };
-    const float Eye = 1.6f;
+        const float Eye = 1.6f;
 
     static string Repo => Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
 
@@ -36,6 +31,9 @@ public static class MuseumSetup
     {
         string src = Path.Combine(Repo, "blender", "export");
         Directory.CreateDirectory(Path.Combine(Models, "textures"));
+        // Espelho de blender/export: FBX que lá já não existem saem daqui também.
+        foreach (var f in Directory.GetFiles(Models, "*.fbx"))
+            if (!File.Exists(Path.Combine(src, Path.GetFileName(f)))) AssetDatabase.DeleteAsset(f.Replace('\\', '/'));
         foreach (var f in Directory.GetFiles(src, "*.fbx"))
             File.Copy(f, Path.Combine(Models, Path.GetFileName(f)), true);
         foreach (var f in Directory.GetFiles(Path.Combine(src, "textures"), "*.png"))
@@ -45,16 +43,18 @@ public static class MuseumSetup
 
     // ---------- prefabs ----------
 
-    class FramePose  // sem "record": o compilador do Unity não traz IsExternalInit
-    {
-        public string Variant; public Vector3 Pos; public Quaternion Rot;
-        public FramePose(string v, Vector3 p, Quaternion r) { Variant = v; Pos = p; Rot = r; }
-    }
+    /// <summary>Objetos que bloqueiam o visitante: chãos, paredes e móveis (não tetos, luzes, rodapés, aros, quadros).</summary>
+    static bool Solid(string n) =>
+        n is "Lobby" or "Lobby_Walls" or "Corridor" or "Room" or "Twin_Desk" or "Lobby_Chair" or "Lobby_Plant_L" or "Lobby_Plant_R"
+        || n.EndsWith("_Door") || n.EndsWith("_Solid") || n.EndsWith("_EndWall") || n.EndsWith("_Bench");
 
-    class ModulePose
+    static GameObject Module(string file, string name)
     {
-        public Vector3 Pos; public Quaternion Rot; public Dictionary<string, FramePose> Frames;  // chave: lado L/R
-        public ModulePose(Vector3 p, Quaternion r, Dictionary<string, FramePose> f) { Pos = p; Rot = r; Frames = f; }
+        var go = InstantiateModel(file, name);
+        foreach (var t in Named(go.transform, "_Frame_")) Object.DestroyImmediate(t.gameObject);  // o MuseumBuilder põe as molduras
+        foreach (var r in go.GetComponentsInChildren<MeshRenderer>())
+            if (Solid(r.name)) r.gameObject.AddComponent<MeshCollider>();
+        return go;
     }
 
     [MenuItem("Museu/2. Criar prefabs e cena")]
@@ -62,75 +62,64 @@ public static class MuseumSetup
     {
         Directory.CreateDirectory(Prefabs);
         Directory.CreateDirectory("Assets/Scenes");
+        foreach (var old in new[] { "MuseumShell", "CorridorModule", "Frame_Portrait", "Frame_Square" }) AssetDatabase.DeleteAsset($"{Prefabs}/{old}.prefab");
 
-        var frames = new Dictionary<string, GameObject>();
-        foreach (var v in Variants)
-        {
-            var go = InstantiateModel($"frame_{v.ToLower()}.fbx", $"Frame_{v}");
-            var b = LocalBounds(go.transform);
-            var box = go.AddComponent<BoxCollider>();  // para o toque no quadro (T039)
-            box.center = b.center;
-            box.size = b.size;
-            go.AddComponent<FrameInfo>();
-            frames[v] = Save(go, $"Frame_{v}");
-        }
-
-        var moduleGo = InstantiateModel("corridor_module.fbx", "CorridorModule");
-        foreach (var t in Named(moduleGo.transform, "_Frame_")) Object.DestroyImmediate(t.gameObject);
-        moduleGo.transform.Find("CorridorModule_01").gameObject.AddComponent<MeshCollider>();
-        MarkStatic(moduleGo);
-        var module = Save(moduleGo, "CorridorModule");
-
-        // Casca do museu: entrada + sala do gémeo. Corredor e molduras saem e voltam como instâncias de prefabs.
-        var shellGo = InstantiateModel("museum_blockout.fbx", "MuseumShell");
-        var modules = new List<ModulePose>();
-        foreach (Transform m in shellGo.transform.Cast<Transform>().Where(t => t.name.StartsWith("CorridorModule_")).ToList())
-        {
-            var slots = new Dictionary<string, FramePose>();
-            foreach (var slot in Named(m, "_Slot_"))
-            {
-                var f = Named(slot, "_Frame_").Single();
-                slots[slot.name[^1..]] = new FramePose(f.name.Split('_').Last(), f.localPosition, f.localRotation);
-            }
-            modules.Add(new ModulePose(m.position, m.rotation, slots));
-            Object.DestroyImmediate(m.gameObject);
-        }
-        var twinFrames = new Dictionary<string, FramePose>();
-        foreach (var phys in Named(shellGo.transform, "Twin_PhysicalFrame_"))
-        {
-            var f = Named(phys, "_Frame_").Single();
-            twinFrames[phys.name] = new FramePose(f.name.Split('_').Last(), f.localPosition, f.localRotation);
-            Object.DestroyImmediate(f.gameObject);
-        }
-        foreach (var name in Colliders) shellGo.transform.Find(name).gameObject.AddComponent<MeshCollider>();
-        MarkStatic(shellGo);
-        var shell = Save(shellGo, "MuseumShell");
+        var frameGo = InstantiateModel("frame_landscape.fbx", "Frame_Landscape");
+        frameGo.AddComponent<FrameInfo>();  // o BoxCollider (toque, T039) põe-o o MuseumBuilder, com a medida final
+        var frame = Save(frameGo, "Frame_Landscape");
+        var corridor = Save(Module("corridor_segment.fbx", "CorridorSegment"), "CorridorSegment");
+        var room = Save(Module("gallery_room.fbx", "GalleryRoom"), "GalleryRoom");
+        var lobby = Save(Module("lobby.fbx", "Lobby"), "Lobby");
 
         // ---------- cena ----------
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-        var root = (GameObject)PrefabUtility.InstantiatePrefab(shell);
-        for (int i = 0; i < modules.Count; i++)
-        {
-            var inst = (GameObject)PrefabUtility.InstantiatePrefab(module);
-            inst.name = $"CorridorModule_{i + 1:00}";
-            Place(inst.transform, inst.transform.Find("CorridorModule_01"), modules[i].Pos, modules[i].Rot, world: true);
-            foreach (var slot in Named(inst.transform, "_Slot_"))
-                AddFrame(frames, slot, modules[i].Frames[slot.name[^1..]]);
-        }
-        foreach (var (name, pose) in twinFrames)
-            AddFrame(frames, root.transform.Find(name), pose);
+        var root = (GameObject)PrefabUtility.InstantiatePrefab(lobby);  // na pose do Blender, como o exemplo
+        var builder = new GameObject("Museum").AddComponent<MuseumBuilder>();
+        builder.corridor = corridor;
+        builder.room = room;
+        builder.frame = frame;
+        builder.lobby = root.transform;
+        builder.photoMaterial = Asset("M_Photo", "Unlit/Texture", Color.white);
+        Measure(builder);
 
-        var lights = SetupLighting(root, modules.Count);
-        var player = SetupPlayer(root);
+        SetupLighting();
+        var player = SetupPlayer(root, builder);
+        builder.viewer = player.transform;
         Physics.SyncTransforms();
         CheckNavigation(player, root);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
-        Bake(lights);
-        EditorSceneManager.SaveScene(scene, ScenePath);
-        Snapshots(player, root);
-        Debug.Log($"[MuseumSetup] ok: {modules.Count} módulos, {Variants.Length} prefabs de moldura, cena {ScenePath}");
+        int photos = Snapshots(player, builder);
+        EditorSceneManager.OpenScene(ScenePath);  // deita fora o museu montado para as imagens: monta-se em runtime
+        Debug.Log($"[MuseumSetup] ok: prefabs Lobby, CorridorSegment, GalleryRoom e moldura-molde; " +
+                  $"cena {ScenePath}; {photos} fotografias montadas nos quadros");
+    }
+
+    /// <summary>
+    /// Poses de ligação medidas no exemplo do Blender (museum_blockout.fbx), em eixos do Unity: onde começa o corredor,
+    /// o passo entre segmentos, a sala em relação ao empty de ligação e a moldura em relação ao slot.
+    /// </summary>
+    static void Measure(MuseumBuilder b)
+    {
+        var ex = InstantiateModel("museum_blockout.fbx", "Example");
+        Transform N(string n) => ex.GetComponentsInChildren<Transform>(true).First(t => t.name == n);
+        var (c1, c2) = (N("C01"), N("C02"));
+        b.segPos = c1.position;
+        b.segRot = c1.rotation;
+        b.segStep = c2.position - c1.position;
+        (Vector3, Quaternion) Rel(Transform from, Transform to) =>
+            (from.InverseTransformPoint(to.position), Quaternion.Inverse(from.rotation) * to.rotation);
+        (b.roomPos, b.roomRot) = Rel(N("C01_Anchor_L"), N("C01_L_R1"));
+        var (np, nr) = Rel(N("C01_L_R1_Anchor_Next"), N("C01_L_R2"));
+        var (rp, rr) = Rel(N("C01_Anchor_R"), N("C01_R_R1"));
+        if ((np - b.roomPos).magnitude > 1e-3f || (rp - b.roomPos).magnitude > 1e-3f
+            || Quaternion.Angle(nr, b.roomRot) > 0.1f || Quaternion.Angle(rr, b.roomRot) > 0.1f)
+            throw new System.Exception("ligações das salas diferentes entre Anchor_L/R/Next: rever blender/build_museum.py");
+        var slot = N("C01_L_R1_Slot_01");
+        (b.framePos, b.frameRot) = Rel(slot, Named(slot, "_Frame_").Single());
+        if (Vector3.Distance(b.segPos + b.segStep, c2.position) > 1e-3f) throw new System.Exception("passo do corredor");
+        Object.DestroyImmediate(ex);
     }
 
     static GameObject InstantiateModel(string file, string name)
@@ -153,94 +142,46 @@ public static class MuseumSetup
     static List<Transform> Named(Transform root, string part) =>
         root.GetComponentsInChildren<Transform>(true).Where(t => t != root && t.name.Contains(part)).ToList();
 
-    /// <summary>Põe a instância de forma a que o nó interior (o objeto do Blender) fique na pose dada.</summary>
-    static void Place(Transform inst, Transform inner, Vector3 pos, Quaternion rot, bool world)
-    {
-        var r = rot * Quaternion.Inverse(inner.localRotation);
-        var p = pos - r * inner.localPosition;
-        if (world) inst.SetPositionAndRotation(p, r);
-        else inst.SetLocalPositionAndRotation(p, r);
-    }
-
-    static void AddFrame(Dictionary<string, GameObject> frames, Transform slot, FramePose pose)
-    {
-        var inst = (GameObject)PrefabUtility.InstantiatePrefab(frames[pose.Variant], slot);
-        Place(inst.transform, inst.transform.Find($"Frame_{pose.Variant}"), pose.Pos, pose.Rot, world: false);
-    }
-
-    static Bounds LocalBounds(Transform root)
-    {
-        var rs = root.GetComponentsInChildren<Renderer>();
-        var b = rs[0].bounds;
-        foreach (var r in rs) b.Encapsulate(r.bounds);
-        b.center = root.InverseTransformPoint(b.center);  // raiz sem rotação/escala ao criar o prefab
-        return b;
-    }
-
-    /// <summary>Tudo estático (batching, lightmaps, oclusão) menos os dispositivos do gémeo, que mudam em tempo real.</summary>
-    static void MarkStatic(GameObject root)
-    {
-        foreach (var t in root.GetComponentsInChildren<Transform>(true))
-        {
-            bool device = t.name.StartsWith("Twin_Light") || t.name.StartsWith("Twin_Fan");
-            GameObjectUtility.SetStaticEditorFlags(t.gameObject, device ? 0 : (StaticEditorFlags)~0);
-        }
-    }
-
-    static Bounds BoundsOf(Transform root, string name)
-    {
-        var t = root.GetComponentsInChildren<Transform>(true).First(x => x.name == name);
-        return t.GetComponent<Renderer>().bounds;
-    }
-
-    // ---------- luz e câmara (T037) ----------
-
-    static List<Light> SetupLighting(GameObject root, int nModules)
+    /// <summary>
+    /// Luz em tempo real: corredor e salas são instanciados em runtime, por isso não podem ter lightmap.
+    /// Ambiente trilight + 1 luz direcional sem sombras (barata no telemóvel); candeeiros são materiais emissivos.
+    /// </summary>
+    static void SetupLighting()
     {
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = new Color(0.50f, 0.50f, 0.52f);
-        RenderSettings.ambientEquatorColor = new Color(0.42f, 0.40f, 0.37f);
-        RenderSettings.ambientGroundColor = new Color(0.22f, 0.18f, 0.15f);
+        RenderSettings.ambientSkyColor = new Color(0.62f, 0.62f, 0.64f);
+        RenderSettings.ambientEquatorColor = new Color(0.55f, 0.53f, 0.50f);
+        RenderSettings.ambientGroundColor = new Color(0.32f, 0.28f, 0.24f);
         RenderSettings.skybox = null;
+        var sun = new GameObject("Light").AddComponent<Light>();
+        sun.type = LightType.Directional;
+        sun.transform.rotation = Quaternion.Euler(55f, 35f, 0f);  // inclinada: as paredes nas duas direções também recebem luz
+        sun.intensity = 0.55f;
+        sun.color = new Color(1f, 0.95f, 0.87f);
+        sun.shadows = LightShadows.None;
+        sun.lightmapBakeType = LightmapBakeType.Realtime;
 
-        var lights = new List<Light>();
-        var parent = new GameObject("Lights").transform;
-        Light Add(string name, Vector3 pos, float range, float intensity, LightmapBakeType mode, Transform under = null)
+        const string path = "Assets/Scenes/MuseumLighting.lighting";
+        var ls = AssetDatabase.LoadAssetAtPath<LightingSettings>(path);
+        if (ls == null)
         {
-            var l = new GameObject(name).AddComponent<Light>();
-            l.transform.SetParent(under ? under : parent, false);
-            l.transform.position = pos;
-            l.type = LightType.Point;
-            l.range = range;
-            l.intensity = intensity;
-            l.color = new Color(1f, 0.94f, 0.84f);
-            l.lightmapBakeType = mode;
-            l.shadows = mode == LightmapBakeType.Baked ? LightShadows.Soft : LightShadows.None;
-            lights.Add(l);
-            return l;
+            ls = new LightingSettings();
+            AssetDatabase.CreateAsset(ls, path);
         }
-        var hall = BoundsOf(root.transform, "Hall_Floor");
-        Add("Light_Hall", hall.center + Vector3.up * 2.8f, 10f, 1.6f, LightmapBakeType.Baked);
-        foreach (var m in GameObject.FindObjectsByType<Transform>(FindObjectsSortMode.None).Where(t => t.name == "CorridorModule_01" && t.parent != null))  // o nó do Blender, não a raiz da 1.ª instância
-            Add($"Light_{m.parent.name}", m.GetComponent<Renderer>().bounds.center + Vector3.up * 2.8f, 6f, 1.3f, LightmapBakeType.Baked);
-        var twin = BoundsOf(root.transform, "Twin_Floor");
-        Add("Light_TwinFill", twin.center + Vector3.up * 2.8f, 8f, 0.8f, LightmapBakeType.Baked);
-        // Luz do candeeiro do gémeo: tempo real, para o estado do dispositivo a ligar/desligar.
-        var bulb = BoundsOf(root.transform, "Twin_Light_Bulb");
-        var twinLamp = Add("Twin_Light_Source", bulb.center + Vector3.down * 0.15f, 5f, 1.5f, LightmapBakeType.Realtime,
-            root.transform.Find("Twin_Light"));
-        twinLamp.color = new Color(1f, 0.85f, 0.6f);
-        return lights;
+        ls.bakedGI = false;
+        ls.realtimeGI = false;
+        Lightmapping.lightingSettings = ls;
+        Lightmapping.Clear();
     }
 
-    static GameObject SetupPlayer(GameObject root)
+    static GameObject SetupPlayer(GameObject root, MuseumBuilder builder)
     {
-        var door = root.transform.Find("Hall_DoorFrame").position;
-        var bench = root.transform.Find("Props_Bench").position;
-        var dir = Vector3.ProjectOnPlane(bench - door, Vector3.up).normalized;
+        // Nasce no Lobby_Spawn, a olhar para o corredor.
+        var spawn = root.GetComponentsInChildren<Transform>(true).First(t => t.name == "Lobby_Spawn").position;
+        var dir = Vector3.ProjectOnPlane(builder.segPos - spawn, Vector3.up).normalized;
 
         var player = new GameObject("Player");
-        player.transform.SetPositionAndRotation(door + dir * 1.0f, Quaternion.LookRotation(dir));
+        player.transform.SetPositionAndRotation(spawn, Quaternion.LookRotation(dir));
         var cc = player.AddComponent<CharacterController>();
         cc.height = 1.75f;
         cc.radius = 0.25f;
@@ -294,14 +235,16 @@ public static class MuseumSetup
     }
 
     /// <summary>Material sem luz guardado como asset (o shader tem de ir referenciado para não ser cortado do build).</summary>
-    static Material Unlit(string name, Color color)
+    static Material Unlit(string name, Color color) => Asset(name, "Unlit/Color", color);
+
+    static Material Asset(string name, string shader, Color color)
     {
         Directory.CreateDirectory("Assets/Materials");
         string path = $"Assets/Materials/{name}.mat";
         var m = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (m == null)
         {
-            m = new Material(Shader.Find("Unlit/Color"));
+            m = new Material(Shader.Find(shader));
             AssetDatabase.CreateAsset(m, path);
         }
         m.color = color;
@@ -361,62 +304,135 @@ public static class MuseumSetup
         if (moved > 4.5f) throw new System.Exception($"atravessou a parede ({moved:0.0} m)");
     }
 
-    static void Bake(List<Light> lights)
+    /// <summary>Monta um exemplo com todas as coleções da app (como no telemóvel) e grava as imagens de verificação.</summary>
+    static int Snapshots(GameObject player, MuseumBuilder builder)
     {
-        const string path = "Assets/Scenes/MuseumLighting.lighting";
-        var ls = AssetDatabase.LoadAssetAtPath<LightingSettings>(path);
-        if (ls == null)
-        {
-            ls = new LightingSettings();
-            AssetDatabase.CreateAsset(ls, path);
-        }
-        ls.bakedGI = true;
-        ls.realtimeGI = false;
-        ls.lightmapper = LightingSettings.Lightmapper.ProgressiveCPU;
-        ls.lightmapResolution = 8;      // texels/m: chega para luz suave e mantém os lightmaps pequenos (mobile)
-        ls.lightmapMaxSize = 1024;
-        ls.directionalityMode = LightmapsMode.NonDirectional;
-        ls.maxBounces = 2;
-        ls.directSampleCount = 32;
-        ls.indirectSampleCount = 256;
-        Lightmapping.lightingSettings = ls;
-        if (!Lightmapping.Bake()) throw new System.Exception("bake de luz falhou");
-    }
+        var cols = MuseumBuilder.Collections();
+        builder.Build(cols);
+        foreach (var area in builder.areas)  // tudo carregado, só para as imagens; no telemóvel carrega-se à volta do visitante
+            for (var run = builder.Load(area); run.MoveNext();) { }
+        Physics.SyncTransforms();
+        int photos = Object.FindObjectsByType<FrameInfo>(FindObjectsSortMode.None).Count(f => !string.IsNullOrEmpty(f.title));
+        int expected = cols.Sum(c => c.files.Length)  // salas + 6 quadros da sala inicial, alternando coleções
+            + (cols.Count == 0 ? 0 : Enumerable.Range(0, 6).Count(j => j / cols.Count < cols[j % cols.Count].files.Length));
+        if (cols.Count > 0 && photos == 0) throw new System.Exception("nenhuma fotografia nos quadros");
 
-    static void Snapshots(GameObject player, GameObject root)
-    {
         string dir = Path.Combine(Repo, "docs", "unity");
         Directory.CreateDirectory(dir);
+        foreach (var old in new[] { "gemeo.png" }) File.Delete(Path.Combine(dir, old));
         var cam = player.GetComponentInChildren<Camera>();
         Shot(cam, Path.Combine(dir, "entrada.png"));
 
-        // Sala do gémeo vista da passagem do corredor (o lado da sala mais perto da entrada do museu).
-        var twin = BoundsOf(root.transform, "Twin_Floor");
-        var pedestal = root.transform.Find("Twin_Pedestal").position;
-        var toHall = Vector3.ProjectOnPlane(player.transform.position - twin.center, Vector3.up).normalized;
         var tmp = new GameObject("SnapshotCam").AddComponent<Camera>();
         tmp.CopyFrom(cam);
-        tmp.transform.position = new Vector3(twin.center.x, Eye, twin.center.z) + toHall * (twin.extents.z - 0.6f);
-        tmp.transform.LookAt(new Vector3(pedestal.x, 1.4f, pedestal.z));
-        Shot(tmp, Path.Combine(dir, "gemeo.png"));
+        var rooms = builder.GetComponentsInChildren<Transform>().Where(t => t.name == "Room").ToList();
+        if (rooms.Count > 0)
+        {
+            // 1.ª sala vista da porta de entrada, a olhar para a porta do fundo.
+            var r = rooms[0];
+            var center = r.GetComponent<Renderer>().bounds.center;
+            var inward = Vector3.ProjectOnPlane(center - r.position, Vector3.up).normalized;
+            tmp.transform.position = new Vector3(r.position.x, Eye, r.position.z) + inward * 0.4f;
+            tmp.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(center - tmp.transform.position, Vector3.up));
+            Shot(tmp, Path.Combine(dir, "sala.png"));
 
-        // Painel aberto num quadro do corredor, visto de 1,6 m (verifica T039 sem telemóvel).
-        var frame = Object.FindObjectsByType<FrameInfo>(FindObjectsSortMode.InstanceID)
-            .First(f => f.transform.parent.name.Contains("_Slot_"));
-        var center = frame.GetComponent<BoxCollider>().bounds.center;
-        var corridor = frame.transform.root.GetComponentsInChildren<Renderer>().First(r => r.name == "CorridorModule_01").bounds.center;
-        var outward = Vector3.ProjectOnPlane(corridor - center, Vector3.up).normalized;
-        tmp.transform.position = new Vector3(center.x, Eye, center.z) + outward * 1.6f;
-        tmp.transform.LookAt(center);
-        var panel = player.GetComponent<MuseumInteraction>().panel;
-        panel.Show(frame, tmp.transform, 1.6f);
-        tmp.transform.position += outward * 0.4f;  // recua para se ver o painel e o quadro
-        Shot(tmp, Path.Combine(dir, "quadro.png"));
-        panel.Close();
+            // Painel aberto num quadro da sala, visto de 1,6 m (verifica T039 sem telemóvel).
+            var frame = r.parent.GetComponentsInChildren<FrameInfo>().First();
+            var fc = frame.GetComponentInChildren<BoxCollider>().bounds.center;
+            var outward = Vector3.ProjectOnPlane(center - fc, Vector3.up).normalized;
+            tmp.transform.position = new Vector3(fc.x, Eye, fc.z) + outward * 1.6f;
+            tmp.transform.LookAt(fc);
+            var panel = player.GetComponent<MuseumInteraction>().panel;
+            panel.Show(frame, tmp.transform, 1.6f);
+            tmp.transform.position += outward * 0.4f;  // recua para se ver o painel e o quadro
+            Shot(tmp, Path.Combine(dir, "quadro.png"));
+            panel.Close();
+
+            // Tamanhos esquisitos na mesma sala: molduras à medida, panorama e tira cortados a 3:1, inválidas ignoradas.
+            var area = builder.areas.First(a => a.root == r.parent.gameObject);
+            builder.Unload(area);
+            var sizes = new[] { (4000, 3000), (10000, 1000), (300, 900), (64, 64), (1080, 1920), (2000, 2000), (1920, 1080), (900, 300), (15, 15), (0, 0) };
+            var test = new MuseumBuilder.Coll { id = "teste", title = "Tamanhos", files = sizes.Select(s => $"{s.Item1}x{s.Item2}").ToArray() };
+            for (int i = 0; i < sizes.Length; i++)
+                builder.Hang(area, area.jobs[i].slot, test, i, sizes[i].Item1 == 0 ? new byte[] { 1, 2, 3 } : Png(sizes[i].Item1, sizes[i].Item2));
+            int hung = area.hung.OfType<GameObject>().Count();
+            if (hung != 8) throw new System.Exception($"tamanhos esquisitos: {hung} molduras, esperadas 8 (2 imagens inválidas)");
+            tmp.transform.position = new Vector3(r.position.x, Eye, r.position.z) + inward * 0.4f;
+            tmp.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(center - tmp.transform.position, Vector3.up));
+            Shot(tmp, Path.Combine(dir, "molduras.png"));
+        }
         Object.DestroyImmediate(tmp.gameObject);
 
         var vr = player.GetComponent<VrMode>();
         Shot(Path.Combine(dir, "rv.png"), vr.left, vr.right);
+        Debug.Log($"[MuseumSetup] {cols.Count} coleções, {photos} quadros com fotografia (esperados {expected})");
+        if (photos != expected) throw new System.Exception($"{photos} quadros com fotografia, esperados {expected}");
+        CheckStreaming(builder);
+        CheckFrameSizes();
+        return photos;
+    }
+
+    /// <summary>Imagem de teste w x h: gradiente com borda branca (vê-se se foi cortada).</summary>
+    static byte[] Png(int w, int h)
+    {
+        var t = new Texture2D(w, h, TextureFormat.RGB24, false);
+        var px = new Color32[w * h];
+        int b = Mathf.Max(1, Mathf.Min(w, h) / 20);
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                px[y * w + x] = x < b || y < b || x >= w - b || y >= h - b ? new Color32(255, 255, 255, 255)
+                    : new Color32((byte)(255 * x / w), (byte)(160 * y / h), (byte)(255 - 255 * x / w), 255);
+        t.SetPixels32(px);
+        var png = t.EncodeToPNG();
+        Object.DestroyImmediate(t);
+        return png;
+    }
+
+    /// <summary>Contas da moldura à medida: proporção mantida até 3:1, sempre dentro de 1,4 x 1,3 m, baixa resolução mais pequena.</summary>
+    static void CheckFrameSizes()
+    {
+        void Is(string what, (float shown, float w, float h) got, float shown, float w, float h)
+        {
+            if (Mathf.Abs(got.shown - shown) > 0.01f || Mathf.Abs(got.w - w) > 0.01f || Mathf.Abs(got.h - h) > 0.01f)
+                throw new System.Exception($"moldura {what}: {got}, esperado ({shown}, {w}, {h})");
+        }
+        Is("4:3", MuseumBuilder.FrameSize(4000, 3000), 1.333f, 1.155f, 0.866f);
+        Is("panorama 10:1", MuseumBuilder.FrameSize(10000, 1000), 3f, 1.4f, 0.467f);
+        Is("tira 1:3", MuseumBuilder.FrameSize(300, 900), 0.333f, 0.433f, 1.3f);
+        Is("64 px", MuseumBuilder.FrameSize(64, 64), 1f, 0.55f, 0.55f);
+        Is("1:1", MuseumBuilder.FrameSize(2000, 2000), 1f, 1f, 1f);
+        for (int w = 1; w <= 8000; w += 97)
+            for (int h = 1; h <= 8000; h += 89)
+            {
+                var (_, fw, fh) = MuseumBuilder.FrameSize(w, h);
+                if (fw > 1.4001f || fh > 1.3001f || fw < 0.1f || fh < 0.1f) throw new System.Exception($"moldura {w}x{h}: {fw}x{fh} m");
+            }
+    }
+
+    /// <summary>
+    /// Escalabilidade: museu de 20 coleções x 200 fotografias (sem ler ficheiros) percorrido sala a sala.
+    /// Em cada ponto, a sala onde se está fica carregada e nunca há mais de MaxKept salas com fotografias.
+    /// </summary>
+    static void CheckStreaming(MuseumBuilder builder)
+    {
+        var big = Object.Instantiate(builder);
+        big.Build(Enumerable.Range(0, 20).Select(i => new MuseumBuilder.Coll
+        {
+            id = $"c{i}", title = $"C{i}", files = Enumerable.Range(0, 200).Select(k => $"{k}.jpg").ToArray(),
+        }).ToList());
+        int maxLoaded = 0, maxActive = 0;
+        foreach (var here in big.areas.ToList())
+        {
+            var p = here.bounds.center;
+            for (var next = big.Step(p); next != null; next = big.Step(p)) next.loaded = true;  // carregar = marcar
+            maxLoaded = Mathf.Max(maxLoaded, big.areas.Count(a => a.loaded));
+            maxActive = Mathf.Max(maxActive, big.areas.Count(a => a.root != null && a.root.activeSelf));
+            if (!here.loaded) throw new System.Exception("sala onde está o visitante sem fotografias");
+        }
+        Debug.Log($"[MuseumSetup] escala: {big.areas.Count} salas, no máximo {maxLoaded} carregadas " +
+                  $"(~{maxLoaded * MuseumBuilder.RoomSlots} fotografias) e {maxActive} visíveis");
+        if (maxLoaded > MuseumBuilder.MaxKept) throw new System.Exception($"{maxLoaded} salas carregadas de uma vez");
+        Object.DestroyImmediate(big.gameObject);
     }
 
     static void Shot(Camera cam, string path, int w = 1600, int h = 900) => Shot(path, w, h, cam);
